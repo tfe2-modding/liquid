@@ -1,0 +1,7 @@
+{
+    "name": "LiquidLoader",
+    "description": "The mod that loads all liquid mods",
+    "version": 1,
+    "dependancies": ["667342976"],
+    "": true
+}
