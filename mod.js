@@ -4,19 +4,24 @@
     const path = require("path")
 
     const MODURL = path.resolve(decodeURI(document.currentScript.src.replace("mod.js", "dontAutoLoad").replace("file:///", "")))
-    function loadDevTools() {
-        chrome.developerPrivate.openDevTools({
+    function loadBGDevTools() {
+        console.log(chrome.developerPrivate.openDevTools({
             renderViewId: -1,
             renderProcessId: -1,
             extensionId: chrome.runtime.id
-        })
+        }))
     }
+    global.process.on("uncaughtException", function(err) {
+        console.error(err)
+    })
     // clear require cache of mods
 	for (const [k, v] of Object.entries(require.cache)) {
 		if (k.startsWith(_internalModHelpers.path) || k.indexOf(path.normalize("workshop/content/1180130")) != -1) {
 			delete require.cache[k]
-			console.debug("Clearead", k)
-		}
+			console.debug("::: Cleared", k)
+		} else {
+            console.debug("safe", k)
+        }
 	}
     function checkValue(value, types) {
         const typelist = types.split(":")
@@ -41,9 +46,13 @@
         if (checkValue(value, types)) return value
         return altvalue
     }
+    ModTools.onModsLoaded(function(game) {
+        global.game = window.game = game
+    })
+    global.console = console
     global.tfe2 = window
     global.ModTools = ModTools
-    const Liquid = global.Liquid = {}
+    const Liquid = window.Liquid = global.Liquid = {}
     require(path.join(MODURL, "/index.js"))
     function tryLoad(mods, modId, modPath) {
         let configFile
@@ -60,11 +69,15 @@
             alert(errmsg)
         }
         if (config) {
+            if (typeof config.entrypoint === "string") {
+                config.entrypoint = path.join(modPath, "/dontAutoLoad/", config.entrypoint)
+            }
             return mods[modId] = {
                 id: modId,
                 path: path.join(modPath, "/dontAutoLoad"),
                 name: verifyValue(config.name, "string", modId),
                 description: verifyValue(config.description, "string", null),
+                author: verifyValue(config.author, "author", null),
                 version: verifyValue(config.version, "number", "Unknown"),
                 entrypoint: verifyValue(config.entrypoint, "string", null),
                 dependancies: verifyValue(config.dependancies, "array:string", [])
@@ -102,8 +115,9 @@
         }
     }
     // RUN MOD LOADER
-    _internalModHelpers.getAllMods(function(localMods) {
+    if (!localStorage.dontloadmodsnexttime) _internalModHelpers.getAllMods(function(localMods) {
         const mods = {}
+        Liquid.mods = mods
         const localModPaths = localMods.map(e=>_internalModHelpers.path+"\\"+e)
         const steamModPaths = _internalModHelpers.getAllModsSteam().map(e=>e.replace("steamMod:///",""))
         const steamMods = steamModPaths.map(e=>e.match(/[^\\\/]+$/)[0])
@@ -115,4 +129,61 @@
         }
         initMods(mods)
     })
+
+    if (localStorage.dontloadmodsnexttime) {
+        delete localStorage.dontloadmodsnexttime
+    }
+
+    Liquid._createWindow = (title, content, bottomButtons=null, closeText="Close", closeAction=null) => {
+        let gui = game.state.gui
+        gui.createWindow()
+        gui.addWindowToStack(()=>{
+            Liquid._createWindow(title, content, bottomButtons, closeText, closeAction)
+        })
+        if (title) gui.windowAddTitleText(title)
+        if (content) if (typeof content != "object") {
+            gui.windowAddInfoText(content.toString())
+        } else {
+            let ids = Object.keys(content)
+            let elements = Object.values(content)
+            for (let i = 0; i < elements.length; i++) {
+                let el = elements[i]
+                if (typeof el != "object") {
+                    gui.windowSimpleButtonContainer = null
+                    gui.windowAddInfoText(el)
+                } else {
+                    if (el.type == "simpleButton") {
+                        gui.windowAddSimpleButton(el.image, el.onClick, el.text, el.textUpdateFunction, el.font)
+                    } else if (el.type == "text") {
+                        gui.windowSimpleButtonContainer = null
+                        gui.windowAddInfoText(el.text, el.textUpdateFunction, el.font)
+                    } else if (el.type == "clickableText") {
+                        gui.windowSimpleButtonContainer = null
+                        gui.windowAddInfoTextClickable(el.onClick, el.text, el.textUpdateFunction, el.font)
+                    } else if (el.type == "checkbox") {
+                        gui.windowSimpleButtonContainer = null
+                        gui_CheckboxButton.createSettingButton(gui,gui.innerWindowStage,gui.windowInner,el.onClick,el.isChecked || (()=>false),el.text)
+                        gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
+                    } else if (el.type == "slider") {
+                        gui.windowSimpleButtonContainer = null
+                        var slider = new gui_Slider(gui,gui.innerWindowStage,gui.windowInner,el.fillLevel=()=>0.50,el.setFillLevel=f=>{})
+                        slider.addChild(new gui_TextElement(slider,gui.innerWindowStage,el.text,el.textUpdateFunction,el.font))
+                        gui.windowInner.addChild(slider)
+                        gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
+                    } else if (el.type == "button") {
+                        let button = new gui_ContainerButton(gui,gui.innerWindowStage,gui.windowInner,el.onClick || (()=>{}), el.isActive || (()=>false), el.onHover || (()=>{}))
+                        let text = new gui_TextElement(button,gui.innerWindowStage,el.text,el.textUpdateFunction,el.font)
+                        button.container.addChild(text)
+                        button.container.padding = { left: 3, right: 3, top: 3, bottom: 0 }
+                        if (el.fillWidth) button.container.fillSecondarySize = true
+                        button.container.updateSize()
+                        gui.windowInner.addChild(button)
+                        gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
+                    }
+                }
+            }
+        }
+        if (typeof bottomButtons == "object") gui.windowAddBottomButtons(bottomButtons, closeText, closeAction)
+        else if (bottomButtons) gui.windowAddBottomButtons()
+    }
 }
