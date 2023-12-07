@@ -8,11 +8,15 @@ Object.defineProperty(extend, "symbol", {
 
 extend.create = function(orig) {
     if (orig[extend.symbol]) return orig
+    console.log(this, new Error)
     const func = function(...args) {
         const funcs = func[extend.symbol]
+        let ret
         for (let i = 0; i < funcs.length; i++) {
-            funcs[i].apply(this, ...args)
+            let res = funcs[i].apply(this, args)
+            if (funcs[i] == orig) ret = res
         }
+        return ret
     }
     Object.defineProperty(func, extend.symbol, {
         enumerable: false,
@@ -20,6 +24,7 @@ extend.create = function(orig) {
         value: [orig]
     })
     Object.assign(func.prototype, orig.prototype)
+    Object.assign(func.__proto__, orig.__proto__)
     return func
 }
 

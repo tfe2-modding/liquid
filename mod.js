@@ -54,12 +54,15 @@
     global.ModTools = ModTools
     const Liquid = window.Liquid = global.Liquid = {}
     require(path.join(MODURL, "/index.js"))
-    function tryLoad(mods, modId, modPath) {
+    function tryLoad(mods, modId, modPath, nonmods) {
         let configFile
         try {
             configFile = fs.readFileSync(path.join(modPath, "/dontAutoLoad/config.json"), "utf8")
         } catch (e) {}
-        if (!configFile) return false
+        if (!configFile) {
+            nonmods[modId] = modPath
+            return false
+        }
         let config
         try {
             config = JSON.parse(configFile)
@@ -74,15 +77,18 @@
             }
             return mods[modId] = {
                 id: modId,
-                path: path.join(modPath, "/dontAutoLoad"),
+                path: modPath,
                 name: verifyValue(config.name, "string", modId),
                 description: verifyValue(config.description, "string", null),
-                author: verifyValue(config.author, "author", null),
+                author: verifyValue(config.author, "string", null),
                 version: verifyValue(config.version, "number", "Unknown"),
                 entrypoint: verifyValue(config.entrypoint, "string", null),
-                dependancies: verifyValue(config.dependancies, "array:string", [])
+                dependancies: verifyValue(config.dependancies, "array:string", []),
+                settings: verifyValue(config.settings, "object:any", null),
+                liquid: true,
             }
         }
+        nonmods[modId] = modPath
         return false
     }
     function makeLoadOrder(mods) {
@@ -117,15 +123,16 @@
     // RUN MOD LOADER
     if (!localStorage.dontloadmodsnexttime) _internalModHelpers.getAllMods(function(localMods) {
         const mods = {}
+        const nonmods = {}
         Liquid.mods = mods
         const localModPaths = localMods.map(e=>_internalModHelpers.path+"\\"+e)
         const steamModPaths = _internalModHelpers.getAllModsSteam().map(e=>e.replace("steamMod:///",""))
         const steamMods = steamModPaths.map(e=>e.match(/[^\\\/]+$/)[0])
         for (let i = 0; i < localMods.length; i++) {
-            tryLoad(mods, "dev:"+localMods[i], localModPaths[i])
+            tryLoad(mods, "dev:"+localMods[i], localModPaths[i], nonmods)
         }
         for (let i = 0; i < steamMods.length; i++) {
-            tryLoad(mods, steamMods[i], steamModPaths[i])
+            tryLoad(mods, steamMods[i], steamModPaths[i], nonmods)
         }
         initMods(mods)
     })
@@ -163,13 +170,13 @@
                     } else if (el.type == "checkbox") {
                         gui.windowSimpleButtonContainer = null
                         gui_CheckboxButton.createSettingButton(gui,gui.innerWindowStage,gui.windowInner,el.onClick,el.isChecked || (()=>false),el.text)
-                        gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
+                        if (!el.noSpace) gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
                     } else if (el.type == "slider") {
                         gui.windowSimpleButtonContainer = null
-                        var slider = new gui_Slider(gui,gui.innerWindowStage,gui.windowInner,el.fillLevel=()=>0.50,el.setFillLevel=f=>{})
+                        var slider = new gui_Slider(gui,gui.innerWindowStage,gui.windowInner,el.fillLevel,el.setFillLevel)
                         slider.addChild(new gui_TextElement(slider,gui.innerWindowStage,el.text,el.textUpdateFunction,el.font))
                         gui.windowInner.addChild(slider)
-                        gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
+                        if (!el.noSpace) gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
                     } else if (el.type == "button") {
                         let button = new gui_ContainerButton(gui,gui.innerWindowStage,gui.windowInner,el.onClick || (()=>{}), el.isActive || (()=>false), el.onHover || (()=>{}))
                         let text = new gui_TextElement(button,gui.innerWindowStage,el.text,el.textUpdateFunction,el.font)
@@ -178,7 +185,9 @@
                         if (el.fillWidth) button.container.fillSecondarySize = true
                         button.container.updateSize()
                         gui.windowInner.addChild(button)
-                        gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
+                        if (!el.noSpace) gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
+                    } else if (el.type == "space") {
+                        gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,el.size||4)))
                     }
                 }
             }
