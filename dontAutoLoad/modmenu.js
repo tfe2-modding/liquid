@@ -15,7 +15,7 @@ function showDirectory(p) {
 
 Liquid.extend.init(tfe2.Game.prototype, "createMainMenu")
 Liquid.extend.push(tfe2.Game.prototype.createMainMenu, function() {
-    tfe2.game.state.addBottomButton("Liquid Mods",()=>{
+    const modMenuButton = tfe2.game.state.addBottomButton("Liquid Mods",()=>{
         const content = ["Select a mod below for more info and configuration", {type:"space"}]
         for (const [modid, mod] of Object.entries(Liquid.mods)) {
             content.push({
@@ -158,4 +158,7 @@ Liquid.extend.push(tfe2.Game.prototype.createMainMenu, function() {
         ])
     },null,"Arial");
     tfe2.game.state.positionUIElements()
+    modMenuButton.set_tint(16762111)
+    modMenuButton.children[0].children[0].blendMode = 1
+    console.log(modMenuButton)
 })
