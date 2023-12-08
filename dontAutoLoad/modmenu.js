@@ -15,6 +15,7 @@ function showDirectory(p) {
 
 Liquid.extend.init(tfe2.Game.prototype, "createMainMenu")
 Liquid.extend.push(tfe2.Game.prototype.createMainMenu, function() {
+    let animating = 0
     const modMenuButton = tfe2.game.state.addBottomButton("Liquid Mods",()=>{
         const content = ["Select a mod below for more info and configuration", {type:"space"}]
         for (const [modid, mod] of Object.entries(Liquid.mods)) {
@@ -156,9 +157,97 @@ Liquid.extend.push(tfe2.Game.prototype.createMainMenu, function() {
                 }
             },
         ])
-    },null,"Arial");
+    },null,"Arial",function() {
+        if (animating) return
+        const letters = getLettersInterface(modMenuButton)
+        async function forAll(arr, cb, delay=100) {
+            for (let i = 0; i < arr.length; i++) {
+                cb(arr[i], i, arr)
+                await new Promise(resolve=>{
+                    setTimeout(resolve, delay)
+                })
+            }
+        }
+        forAll(letters, (e, i, arr) => {
+            animating++
+            let yv = -50
+            const interval = setInterval(()=>{
+                if (yv == 50) {
+                    animating--
+                    clearInterval(interval)
+                }
+                e.absoluteY += yv/100
+                yv++
+            })
+        }, 25)
+    });
     tfe2.game.state.positionUIElements()
     modMenuButton.set_tint(16762111)
     modMenuButton.children[0].children[0].blendMode = 1
     console.log(modMenuButton)
+    function getLettersInterface(bitmapText) {
+        const vertexData = bitmapText.children[0].children[0].vertexData
+        const interface = []
+        for (let i = 0; i < vertexData.length; i += 8) {
+            const letter = {}
+            const x1 = i
+            const y1 = i+1
+            const x2 = i+2
+            const y2 = i+3
+            const x3 = i+4
+            const y3 = i+5
+            const x4 = i+6
+            const y4 = i+7
+            let offsetX = 0
+            let offsetY = 0
+            Object.defineProperty(letter, "absoluteX", {
+                get() {
+                    return vertexData[x1]
+                },
+                set(v) {
+                    const change = v - vertexData[x1]
+                    vertexData[x1] += change
+                    vertexData[x2] += change
+                    vertexData[x3] += change
+                    vertexData[x4] += change
+                },
+                enumerable: true
+            })
+            Object.defineProperty(letter, "absoluteY", {
+                get() {
+                    return vertexData[y1]
+                },
+                set(v) {
+                    const change = v - vertexData[y1]
+                    vertexData[y1] += change
+                    vertexData[y2] += change
+                    vertexData[y3] += change
+                    vertexData[y4] += change
+                },
+                enumerable: true
+            })
+            interface.push(letter)
+        }
+        return interface
+    }
+    setTimeout(()=>{
+        /*
+        let vy
+        let vx
+        let origVertexData = [...modMenuButton.children[0].children[0].vertexData]
+        console.log(origVertexData)
+        setInterval(()=>modMenuButton.children[0].children[0].vertexData.forEach((e,i,arr)=>{
+            if (i%8 == 0) {
+                vy = (0.5-Math.random())*2
+                vx = (0.5-Math.random())*2
+            }
+            if (i%2 == 0) {
+                arr[i] = origVertexData[i] + vx
+            }
+            if (i%2 == 1) {
+                arr[i] = origVertexData[i] + vy
+            }
+        }))
+        */
+    }, 100)
 })
