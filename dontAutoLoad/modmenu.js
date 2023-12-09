@@ -8,6 +8,13 @@ Liquid.extend.push(tfe2.gui_TextElement.prototype.setTextWithoutSizeUpdate, func
     }
     bitmapContainer.set_text(text)
 })
+Liquid.extend.init(tfe2.Game.prototype, "update")
+let ishovered = false
+let washovered = false
+Liquid.extend.push(tfe2.Game.prototype.update, function() {
+    washovered = ishovered
+    ishovered = false
+})
 
 function showDirectory(p) {
     require('child_process').exec(`start "" "${p}"`)
@@ -157,29 +164,45 @@ Liquid.extend.push(tfe2.Game.prototype.createMainMenu, function() {
                 }
             },
         ])
-    },null,"Arial",function() {
-        if (animating) return
+    },null,"Arial",async function() {
+        ishovered = true
+        if (!(ishovered && ishovered != washovered) || animating) return
         const letters = getLettersInterface(modMenuButton)
-        async function forAll(arr, cb, delay=100) {
+        async function forAll(arr, cb, delay=100, stopcondition=()=>{}) {
             for (let i = 0; i < arr.length; i++) {
                 cb(arr[i], i, arr)
                 await new Promise(resolve=>{
                     setTimeout(resolve, delay)
                 })
+                if (stopcondition()) break
             }
         }
-        forAll(letters, (e, i, arr) => {
-            animating++
-            let yv = -50
+        animating++
+        await forAll(letters, (e, i, arr) => {
+            let yv = -70
+            let time = 0
+            let startY = e.absoluteY
+            let speed = 1
             const interval = setInterval(()=>{
-                if (yv == 50) {
-                    animating--
-                    clearInterval(interval)
+                e.absoluteY += yv/(200*speed)
+                time ++
+                if (e.absoluteY > startY) {
+                    yv -= 1/speed
                 }
-                e.absoluteY += yv/100
-                yv++
+                if (e.absoluteY < startY) {
+                    yv += 1/speed
+                }
+                if (time == 140) {
+                    speed = 8
+                    yv /= 2
+                }
+                if (!washovered) {
+                    clearInterval(interval)
+                    e.absoluteY = startY
+                }
             })
-        }, 25)
+        }, 35, ()=>!washovered)
+        animating--
     });
     tfe2.game.state.positionUIElements()
     modMenuButton.set_tint(16762111)
