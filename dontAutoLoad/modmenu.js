@@ -184,7 +184,7 @@ Liquid.extend.push(tfe2.Game.prototype.createMainMenu, function() {
             let startY = e.absoluteY
             let speed = 1
             const interval = setInterval(()=>{
-                e.absoluteY += yv/(200*speed)
+                e.absoluteY += yv/(200/tfe2.game.scaling*speed)
                 time ++
                 if (e.absoluteY > startY) {
                     yv -= 1/speed
