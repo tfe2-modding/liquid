@@ -1,7 +1,6 @@
 function requireExt(ext, func) {
     require.extensions["."+ext] = func
 }
-console.log("A", this, module, this == module)
 
 const fs = require("fs")
 const path = require("path")
@@ -29,5 +28,3 @@ requireExt("xhtml", function(module, filename) {
 requireExt("html", function(module, filename) {
     module.exports = domparser.parseFromString(fs.readFileSync(filename, 'utf8'), "text/html")
 })
-
-console.log(require("./test.xml"))

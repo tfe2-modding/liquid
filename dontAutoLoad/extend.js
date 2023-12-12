@@ -6,26 +6,36 @@ Object.defineProperty(extend, "symbol", {
     value: Symbol(),
 })
 
+let isprevented = false
+
 extend.create = function(orig) {
-    if (orig[extend.symbol]) return orig
-    console.log(this, new Error)
-    const func = function(...args) {
-        const funcs = func[extend.symbol]
-        let ret
-        for (let i = 0; i < funcs.length; i++) {
-            let res = funcs[i].apply(this, args)
-            if (funcs[i] == orig) ret = res
+    try {
+        if (orig[extend.symbol]) return orig
+        const func = function(...args) {
+            isprevented = false
+            const funcs = func[extend.symbol]
+            let ret
+            for (let i = 0; i < funcs.length; i++) {
+                let res = funcs[i].apply(this, args)
+                if (funcs[i] == orig) ret = res
+                if (isprevented) {
+                    isprevented = false
+                    break
+                }
+            }
+            return ret
         }
-        return ret
+        Object.defineProperty(func, extend.symbol, {
+            enumerable: false,
+            writable: false,
+            value: [orig]
+        })
+        Object.assign(func.prototype, orig.prototype)
+        Object.assign(func.__proto__, orig.__proto__)
+        return func
+    } catch(e) {
+        throw e
     }
-    Object.defineProperty(func, extend.symbol, {
-        enumerable: false,
-        writable: false,
-        value: [orig]
-    })
-    Object.assign(func.prototype, orig.prototype)
-    Object.assign(func.__proto__, orig.__proto__)
-    return func
 }
 
 extend.init = function(obj, funcname) {
@@ -34,6 +44,10 @@ extend.init = function(obj, funcname) {
 
 extend.get = function(func) {
     return func[extend.symbol]
+}
+
+extend.prevent = function() {
+    isprevented = true
 }
 
 const arrkeys = Object.getOwnPropertyNames(Array.prototype)

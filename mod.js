@@ -23,5 +23,8 @@
     global.console = console
     global.tfe2 = window
     global.ModTools = ModTools
-    window.Liquid = global.Liquid = require(path.join(MODURL, "/index.js"))
+    global.PIXI = PIXI
+    const {Liquid, loadMods} = require(path.join(MODURL, "/index.js"))
+    window.Liquid = global.Liquid = Liquid
+    loadMods()
 }

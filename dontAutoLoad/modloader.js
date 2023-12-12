@@ -2,6 +2,7 @@ const fs = require("fs")
 const path = require("path")
 
 const LiquidEvents = require("./events")
+const LiquidMod = require("./modclass")
 
 function readJSON(p, fallback) {
     try {
@@ -42,7 +43,7 @@ function verifyValue(value, types, altvalue) {
     if (checkValue(value, types)) return value
     return altvalue
 }
-function tryLoad(mods, modId, modPath, nonmods) {
+function tryLoad(mods, modId, modPath, nonmods, modsettings) {
     let configFile
     try {
         configFile = fs.readFileSync(path.join(modPath, "/dontAutoLoad/config.json"), "utf8")
@@ -63,7 +64,9 @@ function tryLoad(mods, modId, modPath, nonmods) {
         if (typeof config.entrypoint === "string") {
             config.entrypoint = path.join(modPath, "/dontAutoLoad/", config.entrypoint)
         }
-        return mods[modId] = {
+        const settings = verifyValue(config.settings, "object:any", null)
+        modsettings[modId] = settings
+        return mods[modId] = new LiquidMod({
             id: modId,
             path: modPath,
             name: verifyValue(config.name, "string", modId),
@@ -72,9 +75,8 @@ function tryLoad(mods, modId, modPath, nonmods) {
             version: verifyValue(config.version, "number", "Unknown"),
             entrypoint: verifyValue(config.entrypoint, "string", null),
             dependancies: verifyValue(config.dependancies, "array:string", []),
-            settings: verifyValue(config.settings, "object:any", null),
-            liquid: true,
-        }
+            settings: settings,
+        })
     }
     nonmods[modId] = modPath
     return false
@@ -87,53 +89,33 @@ function makeLoadOrder(mods) {
         if (mod.settings) try {
             const settings = readJSON(modId+".json")
             for (const [k, v] of Object.entries(settings)) {
-                mod.settings[k].value = v
+                mod.settings[k] = v
             }
         } catch(e) {
             const defaultSettings = {}
             for (const [k, v] of Object.entries(mod.settings)) {
-                defaultSettings[k] = v.value
+                defaultSettings[k] = v
             }
             writeJSON(modId+".json", defaultSettings)
         }
         mod.enabled = !DISABLED_MODS[modId]
         if (!mod.enabled) continue
         let insertAt = Infinity
-        for (let i = 0; i < mod.dependancies.length; i++) {
-            if (!mods[mod.dependancies[i]]) {
-                if (confirm("In order for "+JSON.stringify(mod.name)+" to function properly, you need to subscribe to "+mod.dependancies[i]+". Would you like to view the mod now?")) window.open("https://steamcommunity.com/sharedfiles/filedetails/?id="+mod.dependancies[i])
-            }
-            const index = modList.indexOf(mods[mod.dependancies[i]])
-            if (index != -1) {
-                if (index < insertAt) insertAt = index
+        mod.linkDependancies(mods)
+        for (const [dependancyId, dependancy] of Object.entries(mod.dependancies)) {
+            if (!dependancy) {
+                if (confirm("In order for "+JSON.stringify(mod.name)+" to function properly, you need to subscribe to "+dependancyId+". Would you like to view the mod now?")) window.open("https://steamcommunity.com/sharedfiles/filedetails/?id="+dependancyId)
+                insertAt = null
+            } else {
+                const index = modList.indexOf(mods[dependancyId])
+                if (index != -1) {
+                    if (index < insertAt) insertAt = index
+                }
             }
         }
-        modList.splice(insertAt, 0, mod)
+        if (insertAt != null) modList.splice(insertAt, 0, mod)
     }
     return modList
-}
-function initMods(mods) {
-    const modList = makeLoadOrder(mods)
-    for (let i = 0; i < modList.length; i++) {
-        console.log(modList[i])
-        if (modList[i].entrypoint) {
-            if (fs.existsSync(modList[i].entrypoint)) {
-                try {
-                    require(modList[i].entrypoint)
-                    LiquidEvents.emit("modLoaded")
-                    LiquidEvents.removeAllListeners("modLoaded")
-                } catch(e) {
-                    tfe2.console.error(e.stack)
-                    alert(e.stack)
-                }
-            } else {
-                let errmsg = "Config error in "+JSON.stringify(modList[i].name)+": entrypoint "+JSON.stringify(modList[i].entrypoint)+" does not exist"
-                tfe2.console.error(errmsg)
-                alert(errmsg)
-            }
-        }
-    }
-    LiquidEvents.emit("allModsLoaded")
 }
 const modHelpers = tfe2._internalModHelpers
 
@@ -157,24 +139,26 @@ function getAllModsSync(then) {
 
 // RUN MOD LOADER
 const mods = {}
+const modSettings = {}
+const nonLiquidMods = {}
 if (!localStorage.dontloadmodsnexttime) {
     const localMods = getAllModsSync()
-    const nonmods = {}
     const localModPaths = localMods.map(e=>modHelpers.path+"\\"+e)
     const steamModPaths = modHelpers.getAllModsSteam().map(e=>e.replace("steamMod:///",""))
     const steamMods = steamModPaths.map(e=>e.match(/[^\\\/]+$/)[0])
     for (let i = 0; i < localMods.length; i++) {
-        tryLoad(mods, "dev_"+localMods[i], localModPaths[i], nonmods)
+        tryLoad(mods, "dev_"+localMods[i], localModPaths[i], nonLiquidMods, modSettings)
     }
     for (let i = 0; i < steamMods.length; i++) {
-        tryLoad(mods, steamMods[i], steamModPaths[i], nonmods)
+        tryLoad(mods, steamMods[i], steamModPaths[i], nonLiquidMods, modSettings)
     }
-    initMods(mods)
-    tfe2.console.log(localMods, mods)
 }
 
 if (localStorage.dontloadmodsnexttime) {
     delete localStorage.dontloadmodsnexttime
 }
 
-module.exports = mods
+exports.mods = mods
+exports.modList = makeLoadOrder(mods)
+exports.modSettings = modSettings
+exports.nonLiquidMods = nonLiquidMods

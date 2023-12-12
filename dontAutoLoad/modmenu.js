@@ -2,7 +2,7 @@ const fs = require("fs")
 const path = require("path")
 
 const extend = require("./extend")
-const mods = require("./modloader")
+const { mods, modSettings, nonLiquidMods } = require("./modloader")
 
 const MODDIR = path.resolve(__dirname.replace("dontAutoLoad", ""))
 
@@ -178,16 +178,19 @@ extend.push(tfe2.Game.prototype.update, function() {
 })
 
 let modMenuButton
+const modButtonPadding = 5
 
 extend.push(tfe2.MainMenu.prototype.positionUIElements, function() {
     if (modMenuButton) {
-        modMenuButton.x = game.rect.width - modMenuButton.width - 15
-        modMenuButton.y = game.rect.height - modMenuButton.height - 65/game.scaling - 15
+        modMenuButton.x = game.rect.width - modMenuButton.width - 15 - modButtonPadding
+        modMenuButton.y = game.rect.height - modMenuButton.height - 65/game.scaling - 15 - modButtonPadding
         const letters = getLettersInterface(modMenuButton)
         for (let i = 0; i < letters.length; i++) {
             const letter = letters[i]
             delete letter.yv
+            delete letter.startY
             if (letter.interval) clearInterval(letters[i].interval)
+            delete letter.interval
         }
     }
 })
@@ -213,7 +216,7 @@ function addMainMenuButton(text,onClick,showOnRight,font,onHover) {
     menu.bottomButtonAttract.set(bottomButton,false);
     return bottomButton;
 }
-
+const disabled_mods = readJSON("disabled_mods.json", {})
 extend.init(tfe2.Game.prototype, "createMainMenu")
 extend.push(tfe2.Game.prototype.createMainMenu, function() {
     let animating = 0
@@ -242,6 +245,7 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
             }
         }
         for (const [modId, mod] of Object.entries(mods)) {
+            const settings = modSettings[modId]
             content.push({
                 type: "button",
                 fillWidth: true,
@@ -254,13 +258,11 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                             font: "Arial"
                         }
                     ]
-                    if (mod.liquid) {
-                        content.push({
-                            type: "text",
-                            text: "[gray]Version: "+mod.version,
-                            font: "Arial"
-                        })
-                    }
+                    content.push({
+                        type: "text",
+                        text: "[gray]Version: "+mod.version,
+                        font: "Arial"
+                    })
                     if (mod.author) {
                         content.push({
                             type: "text",
@@ -268,7 +270,7 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                             font: "Arial"
                         })
                     }
-                    if (mod.liquid) content.push({type:"space"})
+                    content.push({type:"space"})
                     if (mod.description) {
                         content.push({
                             type: "text",
@@ -276,17 +278,15 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                             font: "Arial"
                         }, {type:"space"})
                     }
-                    if (mod.liquid && mod.path != MODDIR) content.push({
+                    if (mod.entrypoint) content.push({
                         type: "checkbox",
                         text: "Enabled",
                         isChecked() {
-                            return mod.enabled
+                            return !disabled_mods[modId]
                         },
                         onClick() {
-                            mod.enabled = !mod.enabled
                             need_restart()
-                            const disabled_mods = readJSON("disabled_mods.json", {})
-                            if (mod.enabled) delete disabled_mods[modId]
+                            if (disabled_mods[modId]) delete disabled_mods[modId]
                             else disabled_mods[modId] = true
                             writeJSON("disabled_mods.json", disabled_mods)
                         },
@@ -299,7 +299,7 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                         saveTimeout = setTimeout(()=>{
                             const modSettings = {}
                             for (const [k, v] of Object.entries(mod.settings)) {
-                                modSettings[k] = v.value
+                                modSettings[k] = v
                             }
                             writeJSON(modId+".json", modSettings)
                         }, delay)
@@ -310,7 +310,7 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                             const settingscontent = [
                                 
                             ]
-                            for (const [k, v] of Object.entries(mod.settings)) {
+                            for (const [k, v] of Object.entries(settings)) {
                                 if (v.type == "checkbox") {
                                     settingscontent.push({
                                         type: "checkbox",
@@ -335,7 +335,9 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                                         },
                                         setFillLevel(level) {
                                             if (v.step) {
-                                                v.value = Math.round(level*(v.max-v.min)/v.step)*v.step+v.min
+                                                const clickedValue = level*(v.max-v.min)+v.min
+                                                const valueToSet = Math.round(clickedValue*(1/v.step))/(1/v.step)
+                                                v.value = valueToSet
                                             } else {
                                                 v.value = level*(v.max-v.min)+v.min
                                             }
@@ -384,6 +386,23 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                 },
                 text: mod.name,
                 font: "Arial"
+            }, {type:"space", size:2})
+        }
+        if (Object.keys(nonLiquidMods).length > 0) {
+            content.push({type:"space"}, "The following mods are not mods Liquid recognizes. Click a mod to view it's files.", {type:"space"})
+        }
+        for (const [modId, path] of Object.entries(nonLiquidMods)) {
+            content.push({
+                type: "button",
+                fillWidth: true,
+                noSpace: true,
+                text: "[gray]"+modId,
+                onClick() {
+                    showDirectory(path)
+                },
+                isActive() {
+                    return true
+                }
             }, {type:"space", size:2})
         }
         content.push({type:"space"})
@@ -452,7 +471,6 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
         for (let i = 0; i < letters.length; i++) {
             const letter = letters[i]
             const distance = Math.abs(tfe2.game.mouse.position.x*tfe2.game.scaling - (letter.x + letter.width/2))
-            console.log(letter, i, distance, startPosDistance)
             if (distance < startPosDistance) {
                 startPosDistance = distance
                 startPos = i
@@ -467,6 +485,10 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
     tfe2.game.state.positionUIElements()
     modMenuButton.set_tint(rgb(255, 196, 255))
     modMenuButton.internalText.children[0].blendMode = 1
+    modMenuButton.internalText.children[0].transform.position.x = modButtonPadding
+    modMenuButton.internalText.children[0].transform.position.y = modButtonPadding
+    modMenuButton.internalText._textWidth += modButtonPadding*2
+    modMenuButton.internalText._textHeight += modButtonPadding*2
     console.log(modMenuButton)
     setTimeout(()=>{
         /*

@@ -2,43 +2,5 @@
     "name": "Liquid",
     "author": "DT",
     "description": "The mod that loads all Liquid mods and provides the Liquid API",
-    "version": 1,
-    "settings": {
-        "example_1": {
-            "type": "checkbox",
-            "label": "Do you like this mod",
-            "value": true
-        },
-        "example_2": {
-            "type": "slider",
-            "label": "How liquid is it",
-            "min": 0,
-            "max": 100,
-            "step": 1,
-            "value": 25
-        },
-        "example_3": {
-            "type": "menu",
-            "label": "What is your favorite fruit",
-            "options": [
-                "Banana",
-                "Apple",
-                "Orange",
-                "Tomato"
-            ],
-            "value": "Apple"
-        },
-        "example_4": {
-            "type": "hidden",
-            "value": "This is only in the config file"
-        },
-        "example_5": {
-            "type": "slider",
-            "label": "How many apples are there",
-            "min": 1,
-            "max": 5,
-            "step": 1,
-            "value": 3
-        }
-    }
+    "version": 1
 }
