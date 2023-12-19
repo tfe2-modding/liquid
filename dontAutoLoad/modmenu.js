@@ -294,7 +294,7 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                     const bottombuttons = []
                     let saveTimeout
                     function saveSettings(delay=500) {
-                        need_restart()
+                        // need_restart()
                         clearTimeout(saveTimeout)
                         saveTimeout = setTimeout(()=>{
                             const modSettings = {}
