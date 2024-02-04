@@ -217,13 +217,22 @@ function addMainMenuButton(text,onClick,showOnRight,font,onHover) {
     return bottomButton;
 }
 const disabled_mods = readJSON("disabled_mods.json", {})
-extend.init(tfe2.Game.prototype, "createMainMenu")
-extend.push(tfe2.Game.prototype.createMainMenu, function() {
-    let animating = 0
-    modMenuButton = addMainMenuButton("Liquid Mods",()=>{
-        const content = []
-        if (NEEDSRESTART) {
-            content.push("[red]You will need to restart The Final Earth 2 for changes to take effect", {
+function openModsMenu() {
+    const content = []
+    if (NEEDSRESTART) {
+        content.push("[red]You will need to restart The Final Earth 2 for changes to take effect", {
+            type: "button",
+            text: "[red]Restart",
+            onClick() {
+                chrome.runtime.reload()
+            }
+        }, {type:"space"})
+    }
+    content.push("Select a mod below for more info and configuration", {type:"space"})
+    function need_restart() {
+        if (!NEEDSRESTART) {
+            NEEDSRESTART = true
+            content.splice(0, 0, "[red]You will need to restart The Final Earth 2 for changes to take effect", {
                 type: "button",
                 text: "[red]Restart",
                 onClick() {
@@ -231,196 +240,188 @@ extend.push(tfe2.Game.prototype.createMainMenu, function() {
                 }
             }, {type:"space"})
         }
-        content.push("Select a mod below for more info and configuration", {type:"space"})
-        function need_restart() {
-            if (!NEEDSRESTART) {
-                NEEDSRESTART = true
-                content.splice(0, 0, "[red]You will need to restart The Final Earth 2 for changes to take effect", {
-                    type: "button",
-                    text: "[red]Restart",
-                    onClick() {
-                        chrome.runtime.reload()
+    }
+    for (const [modId, mod] of Object.entries(mods)) {
+        const settings = modSettings[modId]
+        content.push({
+            type: "button",
+            fillWidth: true,
+            noSpace: true,
+            onClick() {
+                const content = [
+                    {
+                        type: "text",
+                        text: "[gray]ID: "+modId,
+                        font: "Arial"
                     }
-                }, {type:"space"})
-            }
-        }
-        for (const [modId, mod] of Object.entries(mods)) {
-            const settings = modSettings[modId]
-            content.push({
-                type: "button",
-                fillWidth: true,
-                noSpace: true,
-                onClick() {
-                    const content = [
-                        {
-                            type: "text",
-                            text: "[gray]ID: "+modId,
-                            font: "Arial"
-                        }
-                    ]
+                ]
+                content.push({
+                    type: "text",
+                    text: "[gray]Version: "+mod.version,
+                    font: "Arial"
+                })
+                if (mod.author) {
                     content.push({
                         type: "text",
-                        text: "[gray]Version: "+mod.version,
+                        text: "Author: "+mod.author,
                         font: "Arial"
                     })
-                    if (mod.author) {
-                        content.push({
-                            type: "text",
-                            text: "Author: "+mod.author,
-                            font: "Arial"
-                        })
-                    }
-                    content.push({type:"space"})
-                    if (mod.description) {
-                        content.push({
-                            type: "text",
-                            text: mod.description,
-                            font: "Arial"
-                        }, {type:"space"})
-                    }
-                    if (mod.entrypoint) content.push({
-                        type: "checkbox",
-                        text: "Enabled",
-                        isChecked() {
-                            return !disabled_mods[modId]
-                        },
-                        onClick() {
-                            need_restart()
-                            if (disabled_mods[modId]) delete disabled_mods[modId]
-                            else disabled_mods[modId] = true
-                            writeJSON("disabled_mods.json", disabled_mods)
-                        },
-                    })
-                    const bottombuttons = []
-                    let saveTimeout
-                    function saveSettings(delay=500) {
-                        // need_restart()
-                        clearTimeout(saveTimeout)
-                        saveTimeout = setTimeout(()=>{
-                            const modSettings = {}
-                            for (const [k, v] of Object.entries(mod.settings)) {
-                                modSettings[k] = v
-                            }
-                            writeJSON(modId+".json", modSettings)
-                        }, delay)
-                    }
-                    if (mod.settings) bottombuttons.push({
-                        text: "Settings",
-                        action: function() {
-                            const settingscontent = [
-                                
-                            ]
-                            for (const [k, v] of Object.entries(settings)) {
-                                if (v.type == "checkbox") {
-                                    settingscontent.push({
-                                        type: "checkbox",
-                                        text: v.label,
-                                        isChecked() {
-                                            return v.value
-                                        },
-                                        onClick() {
-                                            v.value = !v.value
-                                            saveSettings(0)
+                }
+                content.push({type:"space"})
+                if (mod.description) {
+                    content.push({
+                        type: "text",
+                        text: mod.description,
+                        font: "Arial"
+                    }, {type:"space"})
+                }
+                if (mod.entrypoint) content.push({
+                    type: "checkbox",
+                    text: "Enabled",
+                    isChecked() {
+                        return !disabled_mods[modId]
+                    },
+                    onClick() {
+                        need_restart()
+                        if (disabled_mods[modId]) delete disabled_mods[modId]
+                        else disabled_mods[modId] = true
+                        writeJSON("disabled_mods.json", disabled_mods)
+                    },
+                })
+                const bottombuttons = []
+                let saveTimeout
+                function saveSettings(delay=500) {
+                    // need_restart()
+                    clearTimeout(saveTimeout)
+                    saveTimeout = setTimeout(()=>{
+                        const modSettings = {}
+                        for (const [k, v] of Object.entries(mod.settings)) {
+                            modSettings[k] = v
+                        }
+                        writeJSON(modId+".json", modSettings)
+                    }, delay)
+                }
+                if (mod.settings) bottombuttons.push({
+                    text: "Settings",
+                    action: function() {
+                        const settingscontent = [
+                            
+                        ]
+                        for (const [k, v] of Object.entries(settings)) {
+                            if (v.type == "checkbox") {
+                                settingscontent.push({
+                                    type: "checkbox",
+                                    text: v.label,
+                                    isChecked() {
+                                        return v.value
+                                    },
+                                    onClick() {
+                                        v.value = !v.value
+                                        saveSettings(0)
+                                    }
+                                })
+                            } else if (v.type == "slider") {
+                                settingscontent.push(v.label)
+                                settingscontent.push({
+                                    type: "slider",
+                                    textUpdateFunction() {
+                                        return v.value
+                                    },
+                                    fillLevel() {
+                                        return (v.value-v.min)/(v.max-v.min)
+                                    },
+                                    setFillLevel(level) {
+                                        if (v.step) {
+                                            const clickedValue = level*(v.max-v.min)+v.min
+                                            const valueToSet = Math.round(clickedValue*(1/v.step))/(1/v.step)
+                                            v.value = valueToSet
+                                        } else {
+                                            v.value = level*(v.max-v.min)+v.min
                                         }
-                                    })
-                                } else if (v.type == "slider") {
-                                    settingscontent.push(v.label)
-                                    settingscontent.push({
-                                        type: "slider",
-                                        textUpdateFunction() {
-                                            return v.value
-                                        },
-                                        fillLevel() {
-                                            return (v.value-v.min)/(v.max-v.min)
-                                        },
-                                        setFillLevel(level) {
-                                            if (v.step) {
-                                                const clickedValue = level*(v.max-v.min)+v.min
-                                                const valueToSet = Math.round(clickedValue*(1/v.step))/(1/v.step)
-                                                v.value = valueToSet
-                                            } else {
-                                                v.value = level*(v.max-v.min)+v.min
+                                        saveSettings()
+                                    }
+                                })
+                            } else if (v.type == "menu") {
+                                settingscontent.push(v.label)
+                                settingscontent.push({
+                                    type: "button",
+                                    fillWidth: true,
+                                    text: "A",
+                                    textUpdateFunction() {
+                                        return "[+] "+v.value
+                                    },
+                                    onClick() {
+                                        createWindow(v.label, v.options.map(e=>{
+                                            return {
+                                                type: "checkbox",
+                                                text: e,
+                                                isChecked() {
+                                                    return e == v.value
+                                                },
+                                                onClick() {
+                                                    v.value = e
+                                                    tfe2.game.state.gui.goPreviousWindow()
+                                                    saveSettings()
+                                                },
+                                                noSpace: true,
                                             }
-                                            saveSettings()
-                                        }
-                                    })
-                                } else if (v.type == "menu") {
-                                    settingscontent.push(v.label)
-                                    settingscontent.push({
-                                        type: "button",
-                                        fillWidth: true,
-                                        text: "A",
-                                        textUpdateFunction() {
-                                            return "[+] "+v.value
-                                        },
-                                        onClick() {
-                                            createWindow(v.label, v.options.map(e=>{
-                                                return {
-                                                    type: "checkbox",
-                                                    text: e,
-                                                    isChecked() {
-                                                        return e == v.value
-                                                    },
-                                                    onClick() {
-                                                        v.value = e
-                                                        tfe2.game.state.gui.goPreviousWindow()
-                                                        saveSettings()
-                                                    },
-                                                    noSpace: true,
-                                                }
-                                            }).concat([{type: "space"}]), null, "Back")
-                                        }
-                                    })
-                                }
+                                        }).concat([{type: "space"}]), null, "Back")
+                                    }
+                                })
                             }
-                            createWindow(mod.name+" Settings", settingscontent, null, "Back")
                         }
-                    })
-                    bottombuttons.push({
-                        text: "Files",
-                        action: function() {
-                            showDirectory(mod.path)
-                        }
-                    })
-                    createWindow(mod.name, content, bottombuttons, "Back")
-                },
-                text: mod.name,
-                font: "Arial"
-            }, {type:"space", size:2})
-        }
-        if (Object.keys(nonLiquidMods).length > 0) {
-            content.push({type:"space"}, "The following mods are not mods Liquid recognizes. Click a mod to view it's files.", {type:"space"})
-        }
-        for (const [modId, path] of Object.entries(nonLiquidMods)) {
-            content.push({
-                type: "button",
-                fillWidth: true,
-                noSpace: true,
-                text: "[gray]"+modId,
-                onClick() {
-                    showDirectory(path)
-                },
-                isActive() {
-                    return true
-                }
-            }, {type:"space", size:2})
-        }
-        content.push({type:"space"})
-        createWindow("Liquid Mods", content, [
-            {
-                text: "Mod Files",
-                action: function() {
-                    showDirectory(tfe2._internalModHelpers.path)
-                }
+                        createWindow(mod.name+" Settings", settingscontent, null, "Back")
+                    }
+                })
+                bottombuttons.push({
+                    text: "Files",
+                    action: function() {
+                        showDirectory(mod.path)
+                    }
+                })
+                createWindow(mod.name, content, bottombuttons, "Back")
             },
-            {
-                text: "Game Files",
-                action: function() {
-                    showDirectory(global.__dirname)
-                }
+            text: mod.name,
+            font: "Arial"
+        }, {type:"space", size:2})
+    }
+    if (Object.keys(nonLiquidMods).length > 0) {
+        content.push({type:"space"}, "The following mods are not mods Liquid recognizes. Click a mod to view it's files.", {type:"space"})
+    }
+    for (const [modId, path] of Object.entries(nonLiquidMods)) {
+        content.push({
+            type: "button",
+            fillWidth: true,
+            noSpace: true,
+            text: "[gray]"+modId,
+            onClick() {
+                showDirectory(path)
             },
-        ])
-    },true,"Arial",async function() {
+            isActive() {
+                return true
+            }
+        }, {type:"space", size:2})
+    }
+    content.push({type:"space"})
+    createWindow("Liquid Mods", content, [
+        {
+            text: "Mod Files",
+            action: function() {
+                showDirectory(tfe2._internalModHelpers.path)
+            }
+        },
+        {
+            text: "Game Files",
+            action: function() {
+                showDirectory(global.__dirname)
+            }
+        },
+    ])
+}
+extend.init(tfe2.Game.prototype, "createMainMenu")
+extend.push(tfe2.Game.prototype.createMainMenu, function() {
+    let animating = 0
+    modMenuButton = addMainMenuButton("Liquid Mods",openModsMenu,true,"Arial",async function() {
         ishovered = true
         if (washovered) return
         const letters = getLettersInterface(modMenuButton)
