@@ -158,6 +158,42 @@ if (localStorage.dontloadmodsnexttime) {
     delete localStorage.dontloadmodsnexttime
 }
 
+async function tryResolveMods() {
+	let i = 0
+	while (true) {
+		i++
+		let onlineMods = await new Promise(resolve => {
+			tfe2.getInstalledMods(i, resolve)
+		})
+		console.log(onlineMods)
+		if (onlineMods.length == 0) {
+			break
+		}
+		for (let index = 0; index < onlineMods.length; index++) {
+			let onlineMod = onlineMods[index]
+			console.log(onlineMod)
+			if (nonLiquidMods[onlineMod.publishedFileId]) {
+				mods[onlineMod.publishedFileId] = new LiquidMod({
+					id: onlineMod.publishedFileId,
+					path: nonLiquidMods[onlineMod.publishedFileId],
+					name: onlineMod.title,
+					description: onlineMod.description,
+					author: null,
+					version: (new Date(onlineMod.timeUpdated*1000)).toDateString(),
+					entrypoint: null,
+					dependancies: [],
+					settings: null,
+				})
+				delete nonLiquidMods[onlineMod.publishedFileId]
+			}
+		}
+	}
+}
+
+tryResolveMods()
+
+console.log(mods, nonLiquidMods)
+
 exports.mods = mods
 exports.modList = makeLoadOrder(mods)
 exports.modSettings = modSettings

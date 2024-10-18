@@ -19,6 +19,7 @@ Liquid.once = LiquidEvents.once.bind(LiquidEvents)
 require("./morerequire")
 
 Liquid.extend = require("./extend")
+// Liquid.gui = require("./gui")
 // Liquid.hook = require("./hook")
 
 const { mods, modList } = require("./modloader")

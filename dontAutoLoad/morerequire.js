@@ -15,7 +15,7 @@ requireExt("xml", function(module, filename) {
     const doc = domparser.parseFromString(fs.readFileSync(filename, 'utf8'), "application/xml")
     const parsererror = doc.querySelector("parsererror")
     if (parsererror) throw parsererror.innerText+"\n\t in "+filename
-    module.exports = doc.firstChild
+    module.exports = doc
 })
 
 requireExt("xhtml", function(module, filename) {

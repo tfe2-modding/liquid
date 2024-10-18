@@ -97,6 +97,9 @@ function getLettersInterface(bitmapText) {
     return interface
 }
 
+// ripped from waterworks
+// if you REALLY want me to, i can add this to the Liquid object
+// but this function kinda sucks and wasnt designed to be an external api so im very opposed to it
 function createWindow(title, content, bottomButtons=null, closeText="Close", closeAction=null) {
     with (tfe2) { // i know this is bad practice just excuse it for now
         let gui = game.state.gui
@@ -104,7 +107,7 @@ function createWindow(title, content, bottomButtons=null, closeText="Close", clo
         gui.addWindowToStack(()=>{
             createWindow(title, content, bottomButtons, closeText, closeAction)
         })
-        if (title) gui.windowAddTitleText(title)
+        if (title) gui.windowAddTitleText(title, null, Resources.getTexture("spr_mods_icon_small"))
         if (content) if (typeof content != "object") {
             gui.windowAddInfoText(content.toString())
         } else {
@@ -181,7 +184,7 @@ let modMenuButton
 const modButtonPadding = 5
 
 extend.push(tfe2.MainMenu.prototype.positionUIElements, function() {
-    if (modMenuButton) {
+    if (modMenuButton) try {
         modMenuButton.x = game.rect.width - modMenuButton.width - 15 - modButtonPadding
         modMenuButton.y = game.rect.height - modMenuButton.height - 65/game.scaling - 15 - modButtonPadding
         const letters = getLettersInterface(modMenuButton)
@@ -192,7 +195,7 @@ extend.push(tfe2.MainMenu.prototype.positionUIElements, function() {
             if (letter.interval) clearInterval(letters[i].interval)
             delete letter.interval
         }
-    }
+    } catch (e) {}
 })
 
 function showDirectory(p) {

@@ -1,3 +1,5 @@
 <window>
+	<title>Window Title</title>
     <text>this should be an invalid file</text>
+	<button event="test">Testing Button</button>
 </window>
