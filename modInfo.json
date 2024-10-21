@@ -1,0 +1,8 @@
+{
+	"name": "Liquid",
+	"author": "DT",
+	"description": "The mod that controls this mod menu and provides the Liquid API.",
+	"version": 2.01,
+	"reverseJSLoadOrder": false,
+	"loadPriority": 1e309
+}
