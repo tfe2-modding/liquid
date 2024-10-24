@@ -1,6 +1,6 @@
 # Liquid
 
-Liquid is a set of functions designed to simplify the modding process. That is it, it is purely bindings to pieces of code most frequently extended. If you would like to contribute, please submit a pull request, but I am quite particular about how functions are implemented.
+Liquid is a Mods Menu and set of functions designed to simplify the modding process. That is it, it is purely bindings to pieces of code most frequently extended. If you would like to contribute, please submit a pull request, but I am quite particular about how functions are implemented.
 
 # To whoever picks up this project when I resign:
 
