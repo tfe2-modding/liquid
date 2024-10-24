@@ -1,4 +1,4 @@
-Liquid.modMenu(function() {
+Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriouslyThereShouldBeASettingForThatOrSomething(function() {
 	const fs = require("fs")
 	const path = require("path")
 	
@@ -112,6 +112,5 @@ Liquid.modMenu(function() {
 		}
 	}
 	tryResolveMods()
-	console.log(mods)
 	return mods
 })

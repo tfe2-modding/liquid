@@ -1,0 +1,152 @@
+<!--
+	If you clicked the documentation link and it brought you here: to the source code,
+	please open this file in your browser for best viewing. You don't HAVE to of course,
+	it just it looks beter there.
+-->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Liquid 2.01 Documentation</title>
+		<style>
+			html {
+				background-color: lightgray;
+			}
+			.body {
+				background-color: white;
+				color: black;
+				max-width: 900px;
+				margin: 0px auto;
+				display: block;
+				padding: 5px 50px;
+				font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+			}
+			body {
+				margin: 0px;
+			}
+			img {
+				vertical-align: middle;
+			}
+			code {
+				color: mediumpurple;
+				font-family: Consolas, monospace;
+			}
+			pre {
+				border: 0.5px solid currentColor;
+				padding: 20px 25px;
+				border-radius: 5px;
+				font-family: Consolas, monospace;
+			}
+			#backtotoplink {
+				position: sticky;
+				bottom: 0px;
+				border-top: 1px solid gray;
+				text-align: center;
+			}
+			@media (prefers-color-scheme: dark) {
+				html {
+					background-color: black;
+				}
+				.body {
+					color: white;
+					background-color: #222222;
+				}
+				code {
+					color: hsl(260, 57%, 75%);
+				}
+				:root {
+					color-scheme: dark;
+				}
+			}
+		</style>
+		<link rel="shortcut icon" href="icon.png" type="image/x-icon">
+	</head>
+	<body>
+		<div id="top" class="body">
+			<h1><img src="icon.png" width="64"><span> Liquid 2.01 Documentation</span></h1>
+			<p>This documentation is super not-finished but it does have every function available in Liquid listed at the very least.</p>
+			<fieldset>
+				<legend>Table of Contents</legend>
+				<ol id="toc"></ol>
+			</fieldset>
+			<h2>modInfo.json</h2>
+				<p>Liquid reads some extra keys in <code>modInfo.json</code> to make the mod menu work.</p>
+				<ul>
+					<li><p><code>name</code> (string) - Determines the display name of the mod in the mod menu. If unspecified, Liquid will try to retrieve the mod from the Steam Workshop, but will fail if it doesn't exist or if the player isn't connected to the internet, and will default to the mod's ID instead.</p></li>
+					<li><p><code>description</code> (string) - The description to display after opening the mod in the mod menu.</p></li>
+					<li><p><code>author</code> (string) - The author(s) to display in the mod menu.</p></li>
+					<li><p><code>version</code> (string or number) - The version the mod is on to display in the mod menu.</p></li>
+					<li><p><code>documentation</code> (string) - The URL or relative file path for the mod's documentation, if it has any. This will add a "Documentation" button (the one you clicked to get here!) that will open the URL or file with the default program for it.</p></li>
+				</ul>
+				<p>All of these keys are optional, but it is recommended to fill out a name and description at the very least so liquid can reliably display the correct information in the mod menu.</p>
+			<h2>Mod Settings</h2>
+				<p>Mod settings are defined through a series of functions that register callbacks for when the settings are changed. Currently there are 3 different types of settings: checkbox settings, slider settings, and menu settings.</p>
+				<h3><code>Liquid.addCheckboxSetting(name, defaultValue, onChange, id=name)</code></h3>
+
+				<h3><code>Liquid.addSliderSetting(name, defaultValue, min, max, step, onChange, id=name)</code></h3>
+
+				<h3><code>Liquid.addMenuSetting(name, defaultValue, options, onChange, id=name)</code></h3>
+
+				<p>I'll add descriptions to what each of these functions do later, the parameters themselves should be explanation enough right now. If you need a better explanation on something, just ask me in the official discord @DTmg</p>
+			<h2>Game UI</h2>
+				<p>These functions add a button somewhere to the ingame UI.</p>
+				<h3><code>Liquid.addMainMenuButton(text, onClick(game), showOnRight?, font?, onHover(game)?)</code></h3>
+				<h3><code>Liquid.addGeneralStatsButton(onClick(city), text(city), spriteName, position, isActive(city)?, onHover(city)?, keybind?)</code></h3>
+				<h3><code>Liquid.addQuickActionButton(onClick(city), spriteName, position, isActive(city)?, onHover(city)?, keybind?)</code></h3>
+				<p>I'll add descriptions to what each of these functions do later, the parameters themselves should be explanation enough right now. If you need a better explanation on something, just ask me in the official discord @DTmg</p>
+			<h2>Miscellaneous</h2>
+				<p>Miscellaneous functions and properties that don't really fit into any other category.</p>
+				<h3><code>Liquid.openModsMenu(gui)</code></h3>
+					<p>Open the Liquid mods menu.</p>
+					<ul>
+						<li><code>gui</code> - the gui context to open the window in.</li>
+					</ul>
+				<h3><code>Liquid.getModID()</code></h3>
+					<p>Returns the mod ID (folder when local, workshop id when published) of your mod.</p>
+				<h3><code>Liquid.getModVersion()</code></h3>
+					<p>Returns the mod version of your mod specified in <code>modInfo.json</code>.</p>
+				<h3><code>Liquid.version</code></h3>
+					<p>Has the current Liquid version as shown in the mods menu.</p>
+		</div>
+		<div id="backtotoplink" class="body"><a href="#top"><div>Back to top</div></a></div>
+		<script>
+			// make TOC
+			const toc = document.getElementById("toc")
+			let id = 0
+			let headerList
+			let headerHeaderList
+			const headers = [...document.querySelectorAll("h2,h3,h4")]
+			for (let i = 0; i < headers.length; i++) {
+				const header = headers[i]
+				id++
+				header.id = id
+				const listItem = document.createElement("li")
+				const itemLink = document.createElement("a")
+				itemLink.href = "#"+id
+				itemLink.innerText = header.innerText.split("(")[0]
+				listItem.appendChild(itemLink)
+				if (header.tagName == "H2") {
+					headerList = null
+					headerHeaderList = null
+					toc.appendChild(listItem)
+				} else if (header.tagName == "H3") {
+					headerHeaderList = null
+					if (headerList == null) {
+						headerList = document.createElement("ul")
+						toc.appendChild(headerList)
+					}
+					headerList.append(listItem)
+				} else if (header.tagName == "H4") {
+					if (headerList == null) {
+						headerList = document.createElement("ul")
+						toc.appendChild(headerList)
+					}
+					if (headerHeaderList == null) {
+						headerHeaderList = document.createElement("ul")
+						headerList.appendChild(headerHeaderList)
+					}
+					headerHeaderList.append(listItem)
+				}
+			}
+		</script>
+	</body>
+</html>

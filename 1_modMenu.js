@@ -1,4 +1,5 @@
-Liquid.modMenu = function(getMods) {
+Liquid._mainMenuButtons = []
+Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriouslyThereShouldBeASettingForThatOrSomething = function(getMods) {
 	const fs = require("fs")
 	const path = require("path")
 
@@ -10,83 +11,6 @@ Liquid.modMenu = function(getMods) {
 
 	function writeJSON(p, v) {
 		fs.writeFileSync(path.join(global.__dirname, "mod_data", p), JSON.stringify(v, null, "\t"))
-	}
-
-	let letterInterfaces = new Map
-	function getLettersInterface(bitmapText) {
-		if (letterInterfaces.get(bitmapText)) return letterInterfaces.get(bitmapText)
-		const vertexData = bitmapText.internalText.children[0].vertexData
-		const interface = []
-		for (let i = 0; i < vertexData.length; i += 8) {
-			const letter = {}
-			const x1 = i
-			const y1 = i+1
-			const x2 = i+2
-			const y2 = i+3
-			const x3 = i+4
-			const y3 = i+5
-			const x4 = i+6
-			const y4 = i+7
-			let offsetX = 0
-			let offsetY = 0
-			Object.defineProperty(letter, "x", {
-				get() {
-					return vertexData[x1]
-				},
-				set(v) {
-					const change = v - vertexData[x1]
-					vertexData[x1] += change
-					vertexData[x2] += change
-					vertexData[x3] += change
-					vertexData[x4] += change
-				},
-				enumerable: true
-			})
-			Object.defineProperty(letter, "y", {
-				get() {
-					return vertexData[y1]
-				},
-				set(v) {
-					const change = v - vertexData[y1]
-					vertexData[y1] += change
-					vertexData[y2] += change
-					vertexData[y3] += change
-					vertexData[y4] += change
-				},
-				enumerable: true
-			})
-			Object.defineProperty(letter, "width", {
-				get() {
-					return vertexData[x2] - vertexData[x1]
-				},
-				set(v) {
-					const change = v - (vertexData[x2] - vertexData[x1])
-					vertexData[x2] += change
-					vertexData[x3] += change
-				},
-				enumerable: true
-			})
-			Object.defineProperty(letter, "height", {
-				get() {
-					return vertexData[y4] - vertexData[y1]
-				},
-				set(v) {
-					const change = v - (vertexData[y4] - vertexData[y1])
-					vertexData[y4] += change
-					vertexData[y3] += change
-				},
-				enumerable: true
-			})
-			interface.push(letter)
-		}
-		letterInterfaces.set(bitmapText, interface)
-		return interface
-	}
-
-	function closeWindow(gui) {
-		gui.closeWindow()
-		gui.prevWindowStack.pop()
-		gui.prevWindowStack.pop()()
 	}
 
 	// ripped from waterworks
@@ -161,58 +85,62 @@ Liquid.modMenu = function(getMods) {
 		}
 	} (gui_TextElement.prototype.setTextWithoutSizeUpdate)
 
-
-	let ishovered = false
-	let washovered = false
-
-	Game.prototype.update = function(orig) {
-		return function(...args) {
-			const ret = orig.apply(this, args)
-		washovered = ishovered
-		ishovered = false
-			return ret
-		}
-	} (Game.prototype.update)
-
 	let modMenuButton
-	const modButtonPadding = 5
 
 	MainMenu.prototype.positionUIElements = function(orig) {
 		return function(...args) {
+			if (this.createdLiquidButtons == false) {
+				this.createdLiquidButtons = true
+				if (Liquid._mainMenuButtons.length > 0) {
+					const exit = this.bottomButtons.pop()
+					// get the text
+					const text = exit.get_text()
+					// vaporize it
+					this.bottomButtonOnClick.remove(exit)
+					this.bottomButtonOnRight.remove(exit)
+					this.bottomButtonOnHover.remove(exit)
+					this.bottomButtonAttract.remove(exit)
+					exit.destroy()
+					// add the custom liquid buttons
+					for (let i = 0; i < Liquid._mainMenuButtons.length; i++) {
+						const {text, onClick, showOnRight, font, onHover} = Liquid._mainMenuButtons[i]
+						this.addBottomButton(text, onClick, showOnRight, font, onHover)
+					}
+					// re-add the exit button
+					this.addBottomButton(text, function() {
+						window.close()
+					})
+				}
+				modMenuButton = addMainMenuButton(this, "Installed Mods", openModsMenu.bind(this.game, this.gui), "Arial10")
+				modMenuButton.set_tint(rgb(255, 196, 255))
+			}
 			const ret = orig.apply(this, args)
 			if (modMenuButton) try {
-				modMenuButton.x = this.game.rect.width - modMenuButton.width - 15 - modButtonPadding
-				modMenuButton.y = this.game.rect.height - modMenuButton.height - 65/this.game.scaling - 15 - modButtonPadding
-				const letters = getLettersInterface(modMenuButton)
-				for (let i = 0; i < letters.length; i++) {
-					const letter = letters[i]
-					delete letter.yv
-					delete letter.startY
-					if (letter.interval) clearInterval(letters[i].interval)
-					delete letter.interval
-				}
+				modMenuButton.x = this.game.rect.width - modMenuButton.width - 15
+				modMenuButton.y = this.game.rect.height - modMenuButton.height - 65/this.game.scaling - 15
 			} catch (e) {}
 			return ret
 		}
 	} (MainMenu.prototype.positionUIElements)
 
-	function addMainMenuButton(text,onClick,showOnRight,font,onHover) {
+	function addMainMenuButton(menu, text,onClick,font,onHover=_=>{}) {
 		if(font == null) {
-			font = "Arial16";
+			font = "Arial"
 		}
-		if(showOnRight == null) {
-			showOnRight = false;
+		var menuButton
+		menuButton = {
+			theSprite: new graphics_BitmapText(text, {
+				font: font,
+				tint: 13684944
+			}),
+			onClick: onClick,
+			onHover: onHover,
 		}
-		const menu = this.state
-		var bottomButton = new graphics_BitmapText(text,{ font : showOnRight ? "Arial" : font, tint : showOnRight ? 13684944 : 16777215});
-		menu.bottomButtonStage.addChild(bottomButton);
-		menu.bottomButtons.push(bottomButton);
-		menu.bottomButtonOnClick.set(bottomButton,onClick);
-		menu.bottomButtonOnHover.set(bottomButton,onHover);
-		menu.bottomButtonOnRight.set(bottomButton,showOnRight);
-		menu.bottomButtonAttract.set(bottomButton,false);
-		return bottomButton;
+		menu.bottomButtonStage.addChild(menuButton.theSprite)
+		menu.otherButtons.push(menuButton)
+		return menuButton.theSprite
 	}
+
 	function openModsMenu(gui) {
 		const content = []
 		if (NEEDSRESTART) {
@@ -295,16 +223,16 @@ Liquid.modMenu = function(getMods) {
 									fillWidth: true,
 									text: "Uninstall "+(mod.name || modId)+"",
 									onClick() {
-										closeWindow(gui)
+										gui.goPreviousWindow()
 										gui.windowCanBeClosed = false
 										createWindow(gui, null, ["Loading"], null, "", null)
 										gui.windowCanBeClosed = false
 										greenworks.ugcUnsubscribe(modId, ()=>{
 											need_restart()
-											closeWindow(gui)
-											closeWindow(gui)
+											gui.goPreviousWindow()
+											gui.goPreviousWindow()
 										}, ()=>{
-											closeWindow(gui)
+											gui.goPreviousWindow()
 											createWindow(gui, "Error", "Not sure what happened, but I wasn't able to remove the mod. Maybe check your internet?")
 										})
 									}
@@ -314,7 +242,7 @@ Liquid.modMenu = function(getMods) {
 									fillWidth: true,
 									text: "Cancel",
 									onClick() {
-										closeWindow(gui)
+										gui.goPreviousWindow()
 									}
 								}
 							], null, "", null)
@@ -421,7 +349,7 @@ Liquid.modMenu = function(getMods) {
 								if (mod.documentation.startsWith("http://") || mod.documentation.startsWith("https://")) {
 									nw.Shell.openExternal(mod.documentation)
 								} else {
-									nw.Shell.openExternal(path.join(mod.path, mod.documentation))
+									nw.Shell.openExternal(encodeURI("file:///"+path.join(mod.path, mod.documentation).replaceAll("\\","/")))
 								}
 							}
 						})
@@ -456,79 +384,13 @@ Liquid.modMenu = function(getMods) {
 			},
 		])
 	}
+
+	Liquid.openModsMenu = openModsMenu
+
 	Game.prototype.createMainMenu = function(orig) {
 		return function(...args) {
 			const ret = orig.apply(this, args)
-			let animating = 0
-			modMenuButton = addMainMenuButton.call(this,"Installed Mods",openModsMenu.bind(this, this.state.gui),true,"Arial",async () => {
-				ishovered = true
-				if (washovered) return
-				const letters = getLettersInterface(modMenuButton)
-				async function forAll(arr, cb, delay=100, stopcondition=()=>{}, startDelay=0, start=0, step=1) {
-					if (startDelay) await new Promise(resolve=>{
-						setTimeout(resolve, startDelay)
-					})
-					for (let i = start; i < arr.length && i >= 0; i += step) {
-						cb(arr[i], i, arr)
-						await new Promise(resolve=>{
-							setTimeout(resolve, delay)
-						})
-						if (stopcondition()) break
-					}
-				}
-				animating++
-				const loopFunc = (e, i, arr) => {
-					let time = 0
-					e.startY ??= e.y
-					const distance = 6
-					e.yv = -70 * ((e.y - e.startY)/5 + distance)/distance
-					e.yv = Math.max(Math.min(e.yv, 70), -70)
-					let speed = 0.5
-					if (e.interval) clearInterval(e.interval)
-					e.interval = setInterval(()=>{
-						e.y += e.yv/(400/this.scaling*speed)
-						time += 2
-						if (e.y > e.startY) {
-							e.yv -= 1/speed
-						}
-						if (e.y < e.startY) {
-							e.yv += 1/speed
-						}
-						if (time >= 140) {
-							e.yv /= 1.006
-							speed += 7/1024
-						}
-						if (Math.floor(e.y*this.scaling)/this.scaling == e.startY && Math.floor(e.yv*this.scaling) == 0) {
-							clearInterval(e.interval)
-							e.y = e.startY
-							delete e.yv
-							delete e.startY
-						}
-					})
-				}
-				let startPos = Math.floor(Math.random()*letters.length)
-				let startPosDistance = Infinity
-				for (let i = 0; i < letters.length; i++) {
-					const letter = letters[i]
-					const distance = Math.abs(this.mouse.position.x*this.scaling - (letter.x + letter.width/2))
-					if (distance < startPosDistance) {
-						startPosDistance = distance
-						startPos = i
-					}
-				}
-				await Promise.all([
-					forAll(letters, loopFunc, 25, ()=>!true, 0, startPos, 1),
-					forAll(letters, loopFunc, 25, ()=>!true, 25, startPos-1, -1)
-				])
-				animating--
-			});
-			this.state.positionUIElements()
-			modMenuButton.set_tint(rgb(255, 196, 255))
-			modMenuButton.internalText.children[0].blendMode = 1
-			modMenuButton.internalText.children[0].transform.position.x = modButtonPadding
-			modMenuButton.internalText.children[0].transform.position.y = modButtonPadding
-			modMenuButton.internalText._textWidth += modButtonPadding*2
-			modMenuButton.internalText._textHeight += modButtonPadding*2
+			this.state.createdLiquidButtons = false
 			return ret
 		}
 	} (Game.prototype.createMainMenu)
@@ -567,5 +429,9 @@ Liquid.modMenu = function(getMods) {
 		}
 	}
 
-	delete Liquid.modMenu
+	Liquid.getModVersion = function() {
+		mods[Liquid.getModID(1)].version
+	}
+
+	delete Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriouslyThereShouldBeASettingForThatOrSomething
 }
