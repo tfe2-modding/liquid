@@ -285,12 +285,17 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 										settingscontent.push({
 											type: "slider",
 											textUpdateFunction() {
-												return v.value
+												if (v.percent) {
+													return Math.floor(v.value * 100) + "%"
+												} else {
+													return v.value
+												}
 											},
 											fillLevel() {
 												return (v.value-v.min)/(v.max-v.min)
 											},
 											setFillLevel(level) {
+												let prev = v.value
 												if (v.step) {
 													const clickedValue = level*(v.max-v.min)+v.min
 													const valueToSet = Math.round(clickedValue*(1/v.step))/(1/v.step)
@@ -298,7 +303,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 												} else {
 													v.value = level*(v.max-v.min)+v.min
 												}
-												v.callback(v.value)
+												if (prev != v.value) v.callback(v.value)
 												saveSettings()
 											}
 										})
@@ -320,9 +325,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 															return e == v.value
 														},
 														onClick() {
+															let prev = v.value
 															v.value = e
 															gui.goPreviousWindow()
-															v.callback(v.value)
+															if (prev != v.value) v.callback(v.value)
 															saveSettings(0)
 														},
 														noSpace: true,
