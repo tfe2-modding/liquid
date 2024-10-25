@@ -143,26 +143,24 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 
 	function openModsMenu(gui) {
 		const content = []
-		if (NEEDSRESTART) {
-			content.push("[red]You will need to restart The Final Earth 2 for changes to take effect", {
-				type: "button",
-				text: "[red]Restart",
-				onClick() {
-					chrome.runtime.reload()
-				}
-			}, {type:"space"})
+		let restartButton = {
+			type: "button",
+			text: "Restart The Game",
+			onClick() {
+				chrome.runtime.reload()
+			}
 		}
+		if (NEEDSRESTART) {
+			content.push("[red]You will need to restart The Final Earth 2 for changes to take effect")
+			restartButton.text = "[red]Restart The Game"
+		}
+		content.push(restartButton, {type:"space"})
 		content.push("Select a mod below for more info and configuration.", "If a mod shows up in red, Liquid was unable to figure out the mod name.", {type:"space"})
 		function need_restart() {
 			if (!NEEDSRESTART) {
 				NEEDSRESTART = true
-				content.splice(0, 0, "[red]You will need to restart The Final Earth 2 for changes to take effect", {
-					type: "button",
-					text: "[red]Restart",
-					onClick() {
-						chrome.runtime.reload()
-					}
-				}, {type:"space"})
+				content.splice(0, 0, "[red]You will need to restart The Final Earth 2 for changes to take effect")
+				restartButton.text = "[red]Restart The Game"
 			}
 		}
 		for (const [modId, mod] of Object.entries(mods)) {
