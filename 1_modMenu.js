@@ -13,11 +13,16 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		fs.writeFileSync(path.join(global.__dirname, "mod_data", p), JSON.stringify(v, null, "\t"))
 	}
 
+	let darkmode = true
+
 	// ripped from waterworks
 	// if you REALLY want me to, i can add this to the Liquid object
 	// but this function kinda sucks and wasnt designed to be an external api so im very opposed to it
 	function createWindow(gui, title, content, bottomButtons=null, closeText="Close", closeAction=null) {
-		gui.createWindow()
+		let windowSprite = "spr_9p_window"
+		let scrollbarSprite = "spr_windowparts"
+		let buttonSprite = "spr_button"
+		gui.createWindow(null, Resources.getTexture(windowSprite), null, null, scrollbarSprite)
 		gui.addWindowToStack(()=>{
 			createWindow(gui, title, content, bottomButtons, closeText, closeAction)
 		})
@@ -52,7 +57,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 						gui.windowInner.addChild(slider)
 						if (!el.noSpace) gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
 					} else if (el.type == "button") {
-						let button = new gui_ContainerButton(gui,gui.innerWindowStage,gui.windowInner,el.onClick || (()=>{}), el.isActive || (()=>false), el.onHover || (()=>{}), el.sprite || null)
+						let button = new gui_ContainerButton(gui,gui.innerWindowStage,gui.windowInner,el.onClick || (()=>{}), el.isActive || (()=>false), el.onHover || (()=>{}), el.sprite || buttonSprite)
 						let text = new gui_TextElement(button,gui.innerWindowStage,el.text,el.textUpdateFunction,el.font)
 						button.container.addChild(text)
 						button.container.padding = { left: 3, right: 3, top: 3, bottom: 0 }
@@ -74,13 +79,13 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	gui_TextElement.prototype.setTextWithoutSizeUpdate = function(orig) {
 		return function(...args) {
 			const ret = orig.apply(this, args)
-		let bitmapContainer = this.get_textContainer()
-		let text = bitmapContainer.internalText.text
-		if (text.startsWith("[faint]")) {
-			text = text.replace("[faint]","")
-			bitmapContainer.alpha = 0.5
-		}
-		bitmapContainer.set_text(text)
+			let bitmapContainer = this.get_textContainer()
+			let text = bitmapContainer.internalText.text
+			if (text.startsWith("[faint]")) {
+				text = text.replace("[faint]","")
+				bitmapContainer.alpha = 0.5
+			}
+			bitmapContainer.set_text(text)
 			return ret
 		}
 	} (gui_TextElement.prototype.setTextWithoutSizeUpdate)
