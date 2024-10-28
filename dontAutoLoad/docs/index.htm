@@ -6,7 +6,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Liquid 2.02 Documentation</title>
+		<title>Liquid 2.1 Documentation</title>
 		<style>
 			html {
 				background-color: lightgray;
@@ -93,6 +93,12 @@
 				<h3><code>Liquid.addGeneralStatsButton(onClick(city), text(city), spriteName, position, isActive(city)?, onHover(city)?, keybind?)</code></h3>
 				<h3><code>Liquid.addQuickActionButton(onClick(city), spriteName, position, isActive(city)?, onHover(city)?, keybind?)</code></h3>
 				<p>I'll add descriptions to what each of these functions do later, the parameters themselves should be explanation enough right now. If you need a better explanation on something, just ask me in the official discord @DTmg</p>
+			<h2>Mod Files</h2>
+				<p>These functions add a way to access files stored in mods.</p>
+				<h3><code>Liquid.getModResource(filepath)</code></h3>
+					<p>Gets a resource loaded in your mod by the relative file path to the mod's base folder</p>
+				<h3><code>Liquid.onInfoFilesLoaded(file, callback(info))</code></h3>
+					<p>Gets an array of entries from info files in all mods matching that name, similar to how <code>buildinginfo.json</code> works. This can be used to define custom data files for your mod.</p>
 			<h2>Miscellaneous</h2>
 				<p>Miscellaneous functions and properties that don't really fit into any other category.</p>
 				<h3><code>Liquid.openModsMenu(gui)</code></h3>
