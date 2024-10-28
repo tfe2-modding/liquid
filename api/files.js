@@ -4,7 +4,7 @@ Liquid.getModResource = function(filepath) {
 	return Liquid._modFiles[Liquid.getModID(1)].files[fixedfilepath]
 }
 
-Liquid.onInfoFiles = function(filename, callback) {
+Liquid.onInfoFilesLoaded = function(filename, callback) {
 	ModTools.onModsLoaded(function(game) {
 		let topinfo = []
 		for (const files of Object.values(Liquid._modFiles)) {
