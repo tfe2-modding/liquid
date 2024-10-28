@@ -5,7 +5,9 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			"author": "DT",
 			"description": "The mod that controls this mod menu and provides the Liquid API.",
 			"version": Liquid.version,
-			"documentation": "https://tfe2-modding.github.io/liquid/"
+			"documentation": "https://tfe2-modding.github.io/liquid/",
+			files: {},
+			filesByName: {},
 		}
 	}
 	// hook the mod loader
