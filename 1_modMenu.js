@@ -3,7 +3,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	const fs = require("fs")
 	const path = require("path")
 
+	const myID = Liquid.getModID()
+
 	const mods = getMods()
+	Liquid._modFiles = mods
 
 	function rgb(r, g, b) {
 		return r*65536+g*256+b
@@ -201,7 +204,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 							font: "Arial"
 						}, {type:"space"})
 					}
-					if (!(modId == 3290771180 || modId == "liquid")) content.push({
+					if (!(modId == myID)) content.push({
 						type: "checkbox",
 						text: "Enabled",
 						isChecked() {
