@@ -12,6 +12,8 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	}
 	// hook the mod loader
 	modding_ModLoader.loadAllModsPhase2 = function(orig) {
+		const fs = require("fs")
+		const path = require("path")
 		// setup
 		let modsPath = _internalModHelpers.path+"\\"
 		let steamModsPath = _internalModHelpers.getAllModsSteam()[0].replace("steamMod:///","").replace(/\d+$/,"")
@@ -49,11 +51,9 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 						mod.currentSettings = readJSON(id+".json", {})
 					}
 					const respath = res.url.replace(mod.path, "")
-					mod.files[respath] = res.data
 					if (!mod.filesByName[res.name]) {
 						mod.filesByName[res.name] = []
 					}
-					mod.filesByName[res.name].push(res.data)
 					// modInfo
 					if (res.name == "modInfo.json") {
 						let conf = res.data
@@ -77,6 +77,19 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 							mod.documentation = conf.documentation
 						}
 					}
+					// audio
+					const audios = [".ogg", ".wav", ".mp3"]
+					if (audios.includes(path.extname(res.name)) && res.data instanceof ArrayBuffer && res.data.byteLength == 0) {
+						res.data = PIXI.sound.Sound.from({ url : res.url, preload : true, singleInstance : true, loaded : function() {
+							next()
+						}})
+						mod.filesByName[res.name].push(res.data)
+						mod.files[respath] = res.data
+						console.log(res.data)
+						return
+					}
+					mod.filesByName[res.name].push(res.data)
+					mod.files[respath] = res.data
 					next()
 				})
 			}

@@ -100,24 +100,33 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			if (this.createdLiquidButtons == false) {
 				this.createdLiquidButtons = true
 				if (Liquid._mainMenuButtons.length > 0) {
-					const exit = this.bottomButtons.pop()
-					// get the text
-					const text = exit.get_text()
-					// vaporize it
-					this.bottomButtonOnClick.remove(exit)
-					this.bottomButtonOnRight.remove(exit)
-					this.bottomButtonOnHover.remove(exit)
-					this.bottomButtonAttract.remove(exit)
-					exit.destroy()
+					let exit, text
+					if (!this.game.isMobile) {
+						exit = this.bottomButtons.pop()
+						// get the text
+						text = exit.get_text()
+						// vaporize it
+						this.bottomButtonOnClick.remove(exit)
+						this.bottomButtonOnRight.remove(exit)
+						this.bottomButtonOnHover.remove(exit)
+						this.bottomButtonAttract.remove(exit)
+						exit.destroy()
+					}
+					let baseFont = this.game.isMobile ? "Arial18" : "Arial16"
 					// add the custom liquid buttons
 					for (let i = 0; i < Liquid._mainMenuButtons.length; i++) {
-						const {text, onClick, showOnRight, font, onHover} = Liquid._mainMenuButtons[i]
+						let {text, onClick, showOnRight, font, onHover} = Liquid._mainMenuButtons[i]
+						if (font == null) {
+							font = baseFont;
+						}
 						this.addBottomButton(text, onClick, showOnRight, font, onHover)
 					}
-					// re-add the exit button
-					this.addBottomButton(text, function() {
-						window.close()
-					})
+					if (!this.game.isMobile) {
+						// re-add the exit button
+						this.addBottomButton(text, function() {
+							window.close()
+						}, null, baseFont)
+					}
 				}
 				modMenuButton = addMainMenuButton(this, "Installed Mods", openModsMenu.bind(this.game, this.gui), "Arial10")
 				modMenuButton.set_tint(rgb(255, 196, 255))
@@ -133,7 +142,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 
 	function addMainMenuButton(menu, text,onClick,font,onHover=_=>{}) {
 		if(font == null) {
-			font = "Arial"
+			font = menu.game.isMobile ? "Arial18" : "Arial16";
 		}
 		var menuButton
 		menuButton = {
