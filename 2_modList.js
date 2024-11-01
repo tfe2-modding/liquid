@@ -1,14 +1,88 @@
 Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriouslyThereShouldBeASettingForThatOrSomething(function() {
-	const mods = {
-		[Liquid.getModID()]: {
-			"name": "Liquid",
-			"author": "DT",
-			"description": "The mod that controls this mod menu and provides the Liquid API.",
-			"version": Liquid.version,
-			"documentation": "https://tfe2-modding.github.io/liquid/",
+	const fs = require("fs")
+	const path = require("path")
+	
+	function readJSON(p, fallback) {
+		try {
+			return JSON.parse(fs.readFileSync(path.join(global.__dirname, "mod_data", p), "utf8"))
+		} catch(e) {
+			if (typeof fallback !== "undefined") {
+				return fallback
+			} else {
+				throw e
+			}
+		}
+	}
+
+	// get all local mods
+	const files = fs.readdirSync(_internalModHelpers.path, { withFileTypes: true })
+	var localMods = []
+	for (const dirent of files) {
+		if (dirent.isDirectory())
+			localMods.push(dirent.name)
+	}
+	// get all steam mods
+	const steamModPaths = _internalModHelpers.getAllModsSteam().map(e=>e.replace("steamMod:///",""))
+	// create mods object
+	const mods = {}
+	for (let i = 0; i < localMods.length; i++) {
+		const id = localMods[i]
+		mods[id] = {
+			path: path.join(_internalModHelpers.path, localMods[i]),
+			id: localMods[i],
 			files: {},
 			filesByName: {},
 		}
+	}
+	for (let i = 0; i < steamModPaths.length; i++) {
+		const id = steamModPaths[i].match(/[^\\\/]+$/)[0]
+		mods[id] = {
+			path: steamModPaths[i],
+			id: id,
+			files: {},
+			filesByName: {},
+			workshop: true,
+		}
+	}
+	// loop through mods
+	for (const [id, mod] of Object.entries(mods)) {
+		// attempt to load the file
+		let file
+		try {
+			file = fs.readFileSync(path.join(mod.path, "modInfo.json"), "utf8")
+		} catch(e) {
+			console.warn(mod.id, "didn't have modInfo.json")
+			continue
+		}
+		// attempt to parse the file
+		let conf
+		try {
+			conf = JSON.parse(file)
+		} catch(e) {
+			console.error(mod.id, "had incorrect JSON in modInfo.json:")
+			console.error(e)
+			continue
+		}
+		// add conf properties to the mod
+		if (typeof conf.name === "string") {
+			mod.name = conf.name
+		}
+		if (typeof conf.description === "string") {
+			mod.description = conf.description
+		}
+		if (typeof conf.author === "string") {
+			mod.author = conf.author
+		}
+		if (conf.version != null) {
+			mod.version = conf.version.toString()
+		}
+		if (typeof conf.loadPriority === "number") {
+			mod.loadPriority = conf.loadPriority
+		}
+		if (typeof conf.documentation === "string") {
+			mod.documentation = conf.documentation
+		}
+		mod.currentSettings = readJSON(id+".json", {})
 	}
 	// hook the mod loader
 	modding_ModLoader.loadAllModsPhase2 = function(orig) {
@@ -36,46 +110,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				const wrapper = loaders[i]
 				wrapper.loader.use(function(res, next) {
 					const id = res.url.replace(modsPath, "").replace(steamModsPath, "").split(/\/|\\/)[0]
-					let mod
-					// define mod if it doesn't already exist
-					if (!(mod = mods[id])) {
-						mod = mods[id] = {
-							id: id,
-							path: res.url.split(id)[0]+id,
-							files: {},
-							filesByName: {},
-						}
-						if (res.url.indexOf(steamModsPath) >= 0) {
-							mod.workshop = true
-						}
-						mod.currentSettings = readJSON(id+".json", {})
-					}
+					let mod = mods[id]
 					const respath = res.url.replace(mod.path, "")
 					if (!mod.filesByName[res.name]) {
 						mod.filesByName[res.name] = []
-					}
-					// modInfo
-					if (res.name == "modInfo.json") {
-						let conf = res.data
-						// add conf properties to the mod
-						if (typeof conf.name === "string") {
-							mod.name = conf.name
-						}
-						if (typeof conf.description === "string") {
-							mod.description = conf.description
-						}
-						if (typeof conf.author === "string") {
-							mod.author = conf.author
-						}
-						if (conf.version != null) {
-							mod.version = conf.version.toString()
-						}
-						if (typeof conf.loadPriority === "number") {
-							mod.loadPriority = conf.loadPriority
-						}
-						if (typeof conf.documentation === "string") {
-							mod.documentation = conf.documentation
-						}
 					}
 					// audio
 					const audios = [".ogg", ".wav", ".mp3"]
@@ -85,7 +123,6 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 						}})
 						mod.filesByName[res.name].push(res.data)
 						mod.files[respath] = res.data
-						console.log(res.data)
 						return
 					}
 					mod.filesByName[res.name].push(res.data)

@@ -1,6 +1,6 @@
 // define liquid
 let Liquid = {}
-Liquid.version = 2.12
+Liquid.version = 2.13
 // modID getter
 Liquid.getModID = function(backamount=0) {
     const err = new Error()
