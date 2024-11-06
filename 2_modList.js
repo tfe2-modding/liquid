@@ -58,6 +58,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			file = fs.readFileSync(path.join(mod.path, "modInfo.json"), "utf8")
 		} catch(e) {
 			console.warn(mod.id, "didn't have modInfo.json")
+			mods[mod.id] = mod
 			continue
 		}
 		// attempt to parse the file
@@ -67,6 +68,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		} catch(e) {
 			console.error(mod.id, "had incorrect JSON in modInfo.json:")
 			console.error(e)
+			mods[mod.id] = mod
 			continue
 		}
 		// add conf properties to the mod
@@ -121,6 +123,16 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			orig.call(this, loaders, then, startI)
 			for (let i = startI; i < loaders.length; i++) {
 				const wrapper = loaders[i]
+				wrapper.loader.pre(function(res, next) {
+					const assignedID = res.url.replace(modsPath, "").replace(steamModsPath, "").split(/\/|\\/)[0]
+					let mod = modsByAssignedID[assignedID]
+					const respath = res.url.replace(mod.path, "")
+					let loadingExplainer = document.getElementsByClassName("loadingExplainer")[0]
+					loadingExplainer.style.opacity = "100% !important"
+					loadingExplainer.style.animation = "none"
+					loadingExplainer.innerText = `Loading ${mod.name || mod.id}: ${respath}`
+					next()
+				})
 				wrapper.loader.use(function(res, next) {
 					const assignedID = res.url.replace(modsPath, "").replace(steamModsPath, "").split(/\/|\\/)[0]
 					let mod = modsByAssignedID[assignedID]

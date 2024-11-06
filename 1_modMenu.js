@@ -119,7 +119,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 						if (font == null) {
 							font = baseFont;
 						}
-						this.addBottomButton(text, onClick, showOnRight, font, onHover)
+						this.addBottomButton(text, ()=>onClick.call(this, this.game), showOnRight, font, onHover)
 					}
 					if (!this.game.isMobile) {
 						// re-add the exit button
