@@ -100,6 +100,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		mods[mod.id] = mod
 	}
 	// hook the mod loader
+	let L = { progress: 0 }
 	modding_ModLoader.loadAllModsPhase2 = function(orig) {
 		const fs = require("fs")
 		const path = require("path")
@@ -123,7 +124,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			orig.call(this, loaders, then, startI)
 			for (let i = startI; i < loaders.length; i++) {
 				const wrapper = loaders[i]
+				const baseProgress = i / loaders.length
+				const progressScale = 1 / loaders.length
 				wrapper.loader.pre(function(res, next) {
+					L.progress = (wrapper.loader.progress * progressScale + baseProgress) * 100
 					const assignedID = res.url.replace(modsPath, "").replace(steamModsPath, "").split(/\/|\\/)[0]
 					let mod = modsByAssignedID[assignedID]
 					const respath = res.url.replace(mod.path, "")
@@ -158,6 +162,16 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			modding_ModLoader.loadAllModsPhase2 = orig
 		}
 	} (modding_ModLoader.loadAllModsPhase2)
+	// GameLoader hook for accurate progress bar
+	GameLoader.prototype.update = function(orig) {
+		return function(drawRectangle, scaling) {
+			if (this.loader.progress == 100) {
+				this.loader = L
+				GameLoader.prototype.update = orig
+			}
+			orig.call(this, drawRectangle, scaling)
+		}
+	} (GameLoader.prototype.update)
 	// try to resolve unknown properties from the workshop
 	ModTools.onModsLoaded(async function () {
 		let i = 0
