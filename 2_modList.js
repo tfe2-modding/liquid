@@ -24,28 +24,34 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	// get all steam mods
 	const steamModPaths = _internalModHelpers.getAllModsSteam().map(e=>e.replace("steamMod:///",""))
 	// create mods object
+	let modList = []
 	const mods = {}
+	const modsByAssignedID = {}
 	for (let i = 0; i < localMods.length; i++) {
 		const id = localMods[i]
-		mods[id] = {
+		modList.push({
 			path: path.join(_internalModHelpers.path, localMods[i]),
-			id: localMods[i],
+			id: id,
 			files: {},
 			filesByName: {},
-		}
+			type: "auto",
+		})
 	}
 	for (let i = 0; i < steamModPaths.length; i++) {
 		const id = steamModPaths[i].match(/[^\\\/]+$/)[0]
-		mods[id] = {
+		modList.push({
 			path: steamModPaths[i],
 			id: id,
 			files: {},
 			filesByName: {},
+			type: "auto",
 			workshop: true,
-		}
+		})
 	}
 	// loop through mods
-	for (const [id, mod] of Object.entries(mods)) {
+	for (let i = 0; i < modList.length; i++) {
+		const mod = modList[i]
+		modsByAssignedID[mod.id] = mod
 		// attempt to load the file
 		let file
 		try {
@@ -82,7 +88,14 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		if (typeof conf.documentation === "string") {
 			mod.documentation = conf.documentation
 		}
-		mod.currentSettings = readJSON(id+".json", {})
+		if (typeof conf.modID === "string") {
+			mod.id = conf.modID
+		}
+		if (typeof conf.type === "string") {
+			mod.type = conf.type
+		}
+		mod.currentSettings = readJSON(mod.id+".json", {})
+		mods[mod.id] = mod
 	}
 	// hook the mod loader
 	modding_ModLoader.loadAllModsPhase2 = function(orig) {
@@ -109,8 +122,8 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			for (let i = startI; i < loaders.length; i++) {
 				const wrapper = loaders[i]
 				wrapper.loader.use(function(res, next) {
-					const id = res.url.replace(modsPath, "").replace(steamModsPath, "").split(/\/|\\/)[0]
-					let mod = mods[id]
+					const assignedID = res.url.replace(modsPath, "").replace(steamModsPath, "").split(/\/|\\/)[0]
+					let mod = modsByAssignedID[assignedID]
 					const respath = res.url.replace(mod.path, "")
 					if (!mod.filesByName[res.name]) {
 						mod.filesByName[res.name] = []
@@ -146,7 +159,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			}
 			for (let index = 0; index < workshopMods.length; index++) {
 				let workshopMod = workshopMods[index]
-				const mod = mods[workshopMod.publishedFileId]
+				const mod = modsByAssignedID[workshopMod.publishedFileId]
 				if (mod) {
 					if (mod.id == null) {
 						mod.id = workshopMod.publishedFileId

@@ -1,4 +1,5 @@
 {
+	"modID": "dtmg:liquid",
 	"name": "Liquid",
 	"author": "DT",
 	"description": "The mod that controls this mod menu and provides the Liquid API.",

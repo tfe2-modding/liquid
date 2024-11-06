@@ -3,7 +3,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	const fs = require("fs")
 	const path = require("path")
 
-	const myID = Liquid.getModID()
+	const myID = "dtmg:liquid"
 
 	const mods = getMods()
 	Liquid._modFiles = mods
@@ -140,7 +140,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		}
 	} (MainMenu.prototype.positionUIElements)
 
-	function addMainMenuButton(menu, text,onClick,font,onHover=_=>{}) {
+	function addMainMenuButton(menu, text, onClick, font, onHover=_=>{}) {
 		if(font == null) {
 			font = menu.game.isMobile ? "Arial18" : "Arial16";
 		}
