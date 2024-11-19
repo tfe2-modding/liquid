@@ -4,7 +4,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	
 	function readJSON(p, fallback) {
 		try {
-			return JSON.parse(fs.readFileSync(path.join(global.__dirname, "mod_data", p), "utf8"))
+			return JSON.parse(fs.readFileSync(path.join(nw.App.dataPath, "modSettings", p), "utf8"))
 		} catch(e) {
 			if (typeof fallback !== "undefined") {
 				return fallback
@@ -12,6 +12,31 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				throw e
 			}
 		}
+	}
+
+	// fix my stupid mistake
+	const settingsPath = path.join(nw.App.dataPath, "modSettings")
+	const oldSettingsPath = path.join(global.__dirname, "mod_data")
+	if (fs.existsSync(oldSettingsPath)) {
+		function moveFiles(sourceDir, targetDir) {
+			const files = fs.readdirSync(sourceDir)
+			files.forEach((file) => {
+				const oldPath = path.join(sourceDir, file)
+				const newPath = path.join(targetDir, file)
+				const stat = fs.lstatSync(oldPath)
+	
+				if (stat.isDirectory()) {
+					moveFiles(oldPath, targetDir)
+				} else if (stat.isFile()) {
+					fs.renameSync(oldPath, newPath)
+				}
+			})
+		}
+		try {
+			fs.mkdirSync(settingsPath)
+			moveFiles(oldSettingsPath, settingsPath)
+			fs.rmdirSync(oldSettingsPath)
+		} catch(e) {}
 	}
 
 	// get all local mods
@@ -91,7 +116,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			mod.documentation = conf.documentation
 		}
 		if (typeof conf.modID === "string") {
-			mod.id = conf.modID
+			// mod.id = conf.modID
 		}
 		if (typeof conf.type === "string") {
 			mod.type = conf.type
@@ -107,18 +132,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		// setup
 		let modsPath = _internalModHelpers.path+"\\"
 		let steamModsPath = _internalModHelpers.getAllModsSteam()[0].replace("steamMod:///","").replace(/\d+$/,"")
-		
-		function readJSON(p, fallback) {
-			try {
-				return JSON.parse(fs.readFileSync(path.join(global.__dirname, "mod_data", p), "utf8"))
-			} catch(e) {
-				if (typeof fallback !== "undefined") {
-					return fallback
-				} else {
-					throw e
-				}
-			}
-		}
+
 		// extend
 		return function(loaders, then, startI) {
 			orig.call(this, loaders, then, startI)

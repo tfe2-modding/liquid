@@ -3,7 +3,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	const fs = require("fs")
 	const path = require("path")
 
-	const myID = "dtmg:liquid"
+	const myID = Liquid.getModID()
 
 	const mods = getMods()
 	Liquid._modFiles = mods
@@ -13,23 +13,32 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	}
 
 	function writeJSON(p, v) {
-		fs.writeFileSync(path.join(global.__dirname, "mod_data", p), JSON.stringify(v, null, "\t"))
+		fs.writeFileSync(path.join(nw.App.dataPath, "modSettings", p), JSON.stringify(v, null, "\t"))
 	}
 
 	let darkmode = true
 
-	// ripped from waterworks
-	// if you REALLY want me to, i can add this to the Liquid object
-	// but this function kinda sucks and wasnt designed to be an external api so im very opposed to it
-	function createWindow(gui, title, content, bottomButtons=null, closeText="Close", closeAction=null) {
+	// ripped from waterworks then modified to be specific to liquid
+	function createWindow(gui, title, content, bottomButtons=null, closeText="Close", closeAction=null, icon=null, stackFunc=()=>{
+		createWindow(gui, title, content, bottomButtons, closeText, closeAction, icon, stackFunc)
+	}) {
 		let windowSprite = "spr_9p_window"
 		let scrollbarSprite = "spr_windowparts"
 		let buttonSprite = "spr_button"
 		gui.createWindow(null, Resources.getTexture(windowSprite), null, null, scrollbarSprite)
-		gui.addWindowToStack(()=>{
-			createWindow(gui, title, content, bottomButtons, closeText, closeAction)
-		})
-		if (title) gui.windowAddTitleText(title, null, Resources.getTexture("spr_mods_icon_small"))
+		gui.addWindowToStack(stackFunc)
+		if (title) {
+			let tex
+			if (icon == null) icon = "spr_mods_icon_small"
+			if (icon) {
+				if (typeof icon == "string") {
+					tex = Resources.getTexture(icon)
+				} else {
+					tex = PIXI.Texture.from(icon)
+				}
+			}
+			gui.windowAddTitleText(title, null, tex)
+		}
 		if (content) if (typeof content != "object") {
 			gui.windowAddInfoText(content.toString())
 		} else {
@@ -61,6 +70,26 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 						if (!el.noSpace) gui.windowInner.addChild(new gui_GUISpacing(gui.windowInner,new common_Point(2,4)))
 					} else if (el.type == "button") {
 						let button = new gui_ContainerButton(gui,gui.innerWindowStage,gui.windowInner,el.onClick || (()=>{}), el.isActive || (()=>false), el.onHover || (()=>{}), el.sprite || buttonSprite)
+						if (el.icon) {
+							let tex
+							if (typeof el.icon == "string") {
+								tex = Resources.getTexture(el.icon)
+							} else {
+								tex = PIXI.Texture.from(el.icon)
+							}
+							tex.orig.width = 10
+							tex.orig.height = 10
+							let sprite = new PIXI.Sprite(tex)
+							sprite.alpha = el.iconAlpha == null ? 1 : el.iconAlpha
+							let container = new PIXI.Container()
+							container.addChild(sprite)
+							button.container.addChild(new gui_ContainerHolder(button, gui.innerWindowStage, container, {
+								left: -0.5,
+								right: 1.5,
+								top: -0.5,
+								bottom: 0
+							}))
+						}
 						let text = new gui_TextElement(button,gui.innerWindowStage,el.text,el.textUpdateFunction,el.font)
 						button.container.addChild(text)
 						button.container.padding = { left: 3, right: 3, top: 3, bottom: 0 }
@@ -86,7 +115,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			let text = bitmapContainer.internalText.text
 			if (text.startsWith("[faint]")) {
 				text = text.replace("[faint]","")
-				bitmapContainer.alpha = 0.5
+				bitmapContainer.alpha = 0.3
 			}
 			bitmapContainer.set_text(text)
 			return ret
@@ -180,11 +209,23 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				restartButton.text = "[red]Restart The Game"
 			}
 		}
+		let steammods = []
+		let yourmods = []
 		for (const [modId, mod] of Object.entries(mods)) {
+			let content = mod.workshop ? steammods : yourmods
+			let icon = null
+			if (modId == myID) {
+				icon = "spr_dtmg_liquidmodloader_smallicon"
+			} else {
+				icon = mod.files["\\icon.png"]
+			}
 			content.push({
 				type: "button",
+				sprite: ModTools.modIsEnabled(modId) ? "spr_button" : "spr_transparentbutton",
 				fillWidth: true,
 				noSpace: true,
+				icon: icon,
+				iconAlpha: ModTools.modIsEnabled(modId) ? 1 : 0.3,
 				onClick() {
 					const content = [
 						{
@@ -243,6 +284,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 										createWindow(gui, null, ["Loading"], null, "", null)
 										gui.windowCanBeClosed = false
 										greenworks.ugcUnsubscribe(modId, ()=>{
+											delete mods[modId]
 											need_restart()
 											gui.goPreviousWindow()
 											gui.goPreviousWindow()
@@ -260,7 +302,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 										gui.goPreviousWindow()
 									}
 								}
-							], null, "", null)
+							], null, "", null, icon)
 						}
 					})
 					const bottombuttons = []
@@ -300,8 +342,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 										settingscontent.push({
 											type: "slider",
 											textUpdateFunction() {
-												if (v.percent) {
+												if (v.display == true) {
 													return Math.floor(v.value * 100) + "%"
+												} else if (Array.isArray(v.display)) {
+													return v.display[(v.value - v.min) / (v.step || 0)] || v.value
 												} else {
 													return v.value
 												}
@@ -348,12 +392,12 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 														},
 														noSpace: true,
 													}
-												}).concat([{type: "space"}]), null, "Back")
+												}).concat([{type: "space"}]), null, "Back", null, icon)
 											}
 										})
 									}
 								}
-								createWindow(gui, mod.name+" Settings", settingscontent, null, "Back")
+								createWindow(gui, (mod.name || modId)+" Settings", settingscontent, null, "Back", null, icon)
 							}
 						})
 					}
@@ -375,13 +419,19 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 							}
 						})
 					}
-					createWindow(gui, mod.name, content, bottombuttons, "Back")
+					createWindow(gui, mod.name || modId, content, bottombuttons, "Back", null, icon)
 				},
-				text: mod.name ? mod.name : "[red][faint]" + modId,
+				text: (mod.name ? (ModTools.modIsEnabled(modId) ? "" : "[faint]") + mod.name : "[red]" + (ModTools.modIsEnabled(modId) ? "" : "[faint]") + modId),
 				font: "Arial"
 			}, {type:"space", size:2})
 		}
+		content.push(...steammods)
 		content.push({type:"space"})
+		if (yourmods.length > 0) {
+			content.push("Your mods:")
+			content.push(...yourmods)
+			content.push({type:"space"})
+		}
 		content.push({
 			type: "button",
 			onClick() {
@@ -403,7 +453,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 					nw.Shell.openExternal(global.__dirname)
 				}
 			},
-		])
+		], "Close", null, null, openModsMenu.bind(this, gui))
 	}
 
 	Liquid.openModsMenu = openModsMenu

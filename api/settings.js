@@ -6,7 +6,7 @@ Liquid.addCheckboxSetting = function(name, defaultValue, onChange, id=name) {
 		callback: onChange,
 	})
 }
-Liquid.addSliderSetting = function(name, defaultValue, min, max, step, onChange, id=name, isPercent=false) {
+Liquid.addSliderSetting = function(name, defaultValue, min, max, step, onChange, id=name, display=false) {
 	Liquid._addSetting(Liquid.getModID(1), id, {
 		type: "slider",
 		label: name,
@@ -15,7 +15,7 @@ Liquid.addSliderSetting = function(name, defaultValue, min, max, step, onChange,
 		max: max,
 		step: step,
 		callback: onChange,
-		percent: isPercent
+		display: display
 	})
 }
 Liquid.addMenuSetting = function(name, defaultValue, options, onChange, id=name) {
