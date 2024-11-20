@@ -117,10 +117,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				text = text.replace("[faint]","")
 				bitmapContainer.alpha = 0.3
 			}
-			if(HxOverrides.substr(text,0,"[i#".length) == "[i#" && HxOverrides.substr(text,9,1) == "]") {
-            			text = HxOverrides.substr(text,"[i#123456]".length,null);
-            			bitmapContainer.tint = thx_color_Rgb.toInt(thx_color_Rgbxa.toRgb(thx_color_Color.parse(HxOverrides.substr(text,2,7))))
-			}
+		        if(HxOverrides.substr(text,0,"[i#".length) == "[i#" && HxOverrides.substr(text,9,1) == "]") {
+		            this.get_textContainer().set_tint(thx_color_Rgb.toInt(thx_color_Rgbxa.toRgb(thx_color_Color.parse(HxOverrides.substr(text,2,7)))))
+		            text = HxOverrides.substr(text,"[i#123456]".length,null);
+		        }
 			bitmapContainer.set_text(text)
 			return ret
 		}
