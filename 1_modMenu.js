@@ -113,14 +113,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			const ret = orig.apply(this, args)
 			let bitmapContainer = this.get_textContainer()
 			let text = bitmapContainer.internalText.text
-			if (text.startsWith("[faint]")) {
-				text = text.replace("[faint]","")
-				bitmapContainer.alpha = 0.3
+			if(HxOverrides.substr(text,0,"[i#".length) == "[i#" && HxOverrides.substr(text,9,1) == "]") {
+				this.get_textContainer().set_tint(thx_color_Rgb.toInt(thx_color_Rgbxa.toRgb(thx_color_Color.parse(HxOverrides.substr(text,2,7)))))
+				text = HxOverrides.substr(text,"[i#123456]".length,null);
 			}
-		        if(HxOverrides.substr(text,0,"[i#".length) == "[i#" && HxOverrides.substr(text,9,1) == "]") {
-		            this.get_textContainer().set_tint(thx_color_Rgb.toInt(thx_color_Rgbxa.toRgb(thx_color_Color.parse(HxOverrides.substr(text,2,7)))))
-		            text = HxOverrides.substr(text,"[i#123456]".length,null);
-		        }
 			bitmapContainer.set_text(text)
 			return ret
 		}
@@ -234,13 +230,13 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 					const content = [
 						{
 							type: "text",
-							text: "[faint]ID: "+modId,
+							text: "[i#777777]ID: "+modId,
 							font: "Arial"
 						}
 					]
 					if (mod.version != null) content.push({
 						type: "text",
-						text: "[faint]Version: "+mod.version,
+						text: "[i#777777]Version: "+mod.version,
 						font: "Arial"
 					})
 					if (mod.author) {
@@ -425,7 +421,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 					}
 					createWindow(gui, mod.name || modId, content, bottombuttons, "Back", null, icon)
 				},
-				text: (mod.name ? (ModTools.modIsEnabled(modId) ? "" : "[faint]") + mod.name : "[red]" + (ModTools.modIsEnabled(modId) ? "" : "[faint]") + modId),
+				text: (mod.name ? (ModTools.modIsEnabled(modId) ? "" : "[i#777777]") + mod.name : (ModTools.modIsEnabled(modId) ? "[red]" : "[i#aa7777]") + modId),
 				font: "Arial"
 			}, {type:"space", size:2})
 		}
