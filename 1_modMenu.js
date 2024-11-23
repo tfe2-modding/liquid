@@ -345,9 +345,9 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 												if (v.display == true) {
 													return Math.floor(v.value * 100) + "%"
 												} else if (Array.isArray(v.display)) {
-													return v.display[(v.value - v.min) / (v.step || 0)] || v.value
+													return ""+(v.display[(v.value - v.min) / (v.step || 0)] || v.value)
 												} else {
-													return v.value
+													return ""+(v.value)
 												}
 											},
 											fillLevel() {
