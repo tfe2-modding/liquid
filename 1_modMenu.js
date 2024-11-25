@@ -187,7 +187,29 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		return menuButton.theSprite
 	}
 
-	function openModsMenu(gui) {
+	function openModsMenu(gui, options={}) {
+		const {
+			showWorkshopMods = true,
+			showLocalMods = true,
+			title = "Mods",
+			showRestart = true,
+			onSelect = null,
+			description = "Select a mod below for more info and configuration. If a mod shows up in red, Liquid was unable to figure out the mod name.",
+			bottomButtons = [
+				{
+					text: "Mod Files",
+					action: function() {
+						nw.Shell.openExternal(_internalModHelpers.path)
+					}
+				},
+				{
+					text: "Game Files",
+					action: function() {
+						nw.Shell.openExternal(global.__dirname)
+					}
+				},
+			],
+		} = options
 		const content = []
 		let restartButton = {
 			type: "button",
@@ -196,14 +218,16 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				chrome.runtime.reload()
 			}
 		}
-		if (NEEDSRESTART) {
-			content.push("[red]You will need to restart The Final Earth 2 for changes to take effect")
-			restartButton.text = "[red]Restart The Game"
+		if (showRestart) {
+			if (NEEDSRESTART) {
+				content.push("[red]You will need to restart The Final Earth 2 for changes to take effect")
+				restartButton.text = "[red]Restart The Game"
+			}
+			content.push(restartButton, {type:"space"})
 		}
-		content.push(restartButton, {type:"space"})
-		content.push("Select a mod below for more info and configuration.", "If a mod shows up in red, Liquid was unable to figure out the mod name.", {type:"space"})
+		content.push(description, {type:"space"})
 		function need_restart() {
-			if (!NEEDSRESTART) {
+			if (!NEEDSRESTART && showRestart) {
 				NEEDSRESTART = true
 				content.splice(0, 0, "[red]You will need to restart The Final Earth 2 for changes to take effect")
 				restartButton.text = "[red]Restart The Game"
@@ -226,7 +250,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				noSpace: true,
 				icon: icon,
 				iconAlpha: ModTools.modIsEnabled(modId) ? 1 : 0.3,
-				onClick() {
+				onClick: onSelect ? onSelect.bind(this, mod.path) : function() {
 					const content = [
 						{
 							type: "text",
@@ -425,35 +449,25 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				font: "Arial"
 			}, {type:"space", size:2})
 		}
-		content.push(...steammods)
-		content.push({type:"space"})
-		if (yourmods.length > 0) {
+		if (showWorkshopMods) {
+			content.push(...steammods)
+			content.push({type:"space"})
+			content.push({
+				type: "button",
+				onClick() {
+					greenworks.activateGameOverlayToWebPage("http://steamcommunity.com/app/1180130/workshop")
+				},
+				text: "[blue]"+common_Localize.lo("open_workshop")
+			})
+			content.push({type:"space"})
+		}
+		if (showLocalMods && yourmods.length > 0) {
 			content.push("Your mods:")
 			content.push(...yourmods)
 			content.push({type:"space"})
 		}
-		content.push({
-			type: "button",
-			onClick() {
-				greenworks.activateGameOverlayToWebPage("http://steamcommunity.com/app/1180130/workshop")
-			},
-			text: "[blue]"+common_Localize.lo("open_workshop")
-		})
 		content.push({type:"space"})
-		createWindow(gui, "Mods", content, [
-			{
-				text: "Mod Files",
-				action: function() {
-					nw.Shell.openExternal(_internalModHelpers.path)
-				}
-			},
-			{
-				text: "Game Files",
-				action: function() {
-					nw.Shell.openExternal(global.__dirname)
-				}
-			},
-		], "Close", null, null, openModsMenu.bind(this, gui))
+		createWindow(gui, title, content, bottomButtons, "Close", null, null, openModsMenu.bind(this, gui, options))
 	}
 
 	Liquid.openModsMenu = openModsMenu

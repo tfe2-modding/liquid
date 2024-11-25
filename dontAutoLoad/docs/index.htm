@@ -6,7 +6,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>Liquid 2.18 Documentation</title>
+		<title>Liquid 2.19 Documentation</title>
 		<style>
 			html {
 				background-color: lightgray;
@@ -62,7 +62,7 @@
 	</head>
 	<body>
 		<div id="top" class="body">
-			<h1><img src="icon.png" width="64"><span> Liquid 2.18 Documentation</span></h1>
+			<h1><img src="icon.png" width="64"><span> Liquid 2.19 Documentation</span></h1>
 			<p>This documentation is super not-finished but it does have every function available in Liquid listed at the very least.</p>
 			<fieldset>
 				<legend>Table of Contents</legend>
@@ -103,10 +103,26 @@
 					<p>Gets an array of entries from info files in all mods matching that name, similar to how <code>buildinginfo.json</code> works. This can be used to define custom data files for your mod.</p>
 			<h2>Miscellaneous</h2>
 				<p>Miscellaneous functions and properties that don't really fit into any other category.</p>
-				<h3><code>Liquid.openModsMenu(gui)</code></h3>
+				<h3><code>Liquid.openModsMenu(gui, options)</code></h3>
 					<p>Open the Liquid mods menu.</p>
 					<ul>
-						<li><code>gui</code> - the gui context to open the window in.</li>
+						<li><code>gui</code> - The gui context to open the window in.</li>
+						<li><code>options</code> - A set of options to use while opening the window:
+						<ul>
+							<li><code>showWorkshopMods</code> - Whether or not to show mods gotten from the steam workshop. Defaults to true.</li>
+							<li><code>showLocalMods</code> - Whether or not to show mods created in the local mod directory (your mods). Defaults to true.</li>
+							<li><code>title</code> - The title of the window. Defaults to "Mods".</li>
+							<li><code>showRestart</code> - Whether or not to show the restart game button and restart notification. Defaults to true.</li>
+							<li><code>onSelect</code> - A callback to run when a mod is selected from the list. Gets passed the mod's path. Defaults to opening the mod menu for that mod.</li>
+							<li><code>description</code> - The description to display at the top of the window. Defaults to "Select a mod below for more info and configuration. If a mod shows up in red, Liquid was unable to figure out the mod name."</li>
+							<li><code>bottomButtons</code> - An array of objects for buttons that appear at the bottom of the window. If not provided, defaults to the "Mod Files" and "Game Files" buttons.
+								<ul>
+									<li><code>text</code> - The text to display on the button.</li>
+									<li><code>action</code> - A callback to run when the button is pressed.</li>
+								</ul>
+							</li>
+						</ul>
+						</li>
 					</ul>
 				<h3><code>Liquid.getModID()</code></h3>
 					<p>Returns the mod ID (folder when local, workshop id when published) of your mod.</p>
