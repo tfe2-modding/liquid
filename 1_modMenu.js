@@ -16,8 +16,6 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		fs.writeFileSync(path.join(nw.App.dataPath, "modSettings", p), JSON.stringify(v, null, "\t"))
 	}
 
-	let darkmode = true
-
 	// ripped from waterworks then modified to be specific to liquid
 	function createWindow(gui, title, content, bottomButtons=null, closeText="Close", closeAction=null, icon=null, stackFunc=()=>{
 		createWindow(gui, title, content, bottomButtons, closeText, closeAction, icon, stackFunc)
@@ -108,21 +106,8 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	}
 
 	let NEEDSRESTART = false
-	gui_TextElement.prototype.setTextWithoutSizeUpdate = function(orig) {
-		return function(...args) {
-			const ret = orig.apply(this, args)
-			let bitmapContainer = this.get_textContainer()
-			let text = bitmapContainer.internalText.text
-			if(HxOverrides.substr(text,0,"[i#".length) == "[i#" && HxOverrides.substr(text,9,1) == "]") {
-				this.get_textContainer().set_tint(thx_color_Rgb.toInt(thx_color_Rgbxa.toRgb(thx_color_Color.parse(HxOverrides.substr(text,2,7)))))
-				text = HxOverrides.substr(text,"[i#123456]".length,null);
-			}
-			bitmapContainer.set_text(text)
-			return ret
-		}
-	} (gui_TextElement.prototype.setTextWithoutSizeUpdate)
 
-	let modMenuButton
+	Liquid.modMenuButton
 
 	MainMenu.prototype.positionUIElements = function(orig) {
 		return function(...args) {
@@ -157,13 +142,13 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 						}, null, baseFont)
 					}
 				}
-				modMenuButton = addMainMenuButton(this, "Installed Mods", openModsMenu.bind(this.game, this.gui), "Arial10")
-				modMenuButton.set_tint(rgb(255, 196, 255))
+				Liquid.modMenuButton = addMainMenuButton(this, Liquid._anyModNeedsUpdate ? "spr_logo_liquid_needsupdate" : "spr_logo_liquid", openModsMenu.bind(this.game, this.gui), "Arial10")
+				// modMenuButton.set_tint(rgb(255, 196, 255))
 			}
 			const ret = orig.apply(this, args)
-			if (modMenuButton) try {
-				modMenuButton.x = this.game.rect.width - modMenuButton.width - 15
-				modMenuButton.y = this.game.rect.height - modMenuButton.height - 65/this.game.scaling - 15
+			if (Liquid.modMenuButton) try {
+				Liquid.modMenuButton.x = this.game.rect.width - Liquid.modMenuButton.width - 15
+				Liquid.modMenuButton.y = this.game.rect.height - Liquid.modMenuButton.height - 65/this.game.scaling - 15
 			} catch (e) {}
 			return ret
 		}
@@ -175,10 +160,7 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		}
 		var menuButton
 		menuButton = {
-			theSprite: new graphics_BitmapText(text, {
-				font: font,
-				tint: 13684944
-			}),
+			theSprite: new PIXI.Sprite(Resources.getTexture(text)),
 			onClick: onClick,
 			onHover: onHover,
 		}
@@ -245,10 +227,13 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			}
 			content.push({
 				type: "button",
-				sprite: ModTools.modIsEnabled(modId) ? "spr_button" : "spr_transparentbutton",
+				sprite: ModTools.modIsEnabled(modId) ? (mod.utime.getTime() > mod.mtime.getTime() ? "spr_button_update" : "spr_button") : "spr_transparentbutton",
 				fillWidth: true,
 				noSpace: true,
 				icon: icon,
+				onHover: function() {
+					if (mod.utime.getTime() > mod.mtime.getTime()) gui.tooltip.setText(this, "A newer version of this mod is available. Unsubscribe and resubscribe to it in the workshop with the game closed to update it.")
+				},
 				iconAlpha: ModTools.modIsEnabled(modId) ? 1 : 0.3,
 				onClick: onSelect ? onSelect.bind(this, mod.path) : function() {
 					const content = [
@@ -290,6 +275,13 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 						},
 					})
 					if (mod.workshop) content.push({
+						type: "button",
+						fillWidth: true,
+						text: "View Workshop page",
+						onClick() {
+							greenworks.activateGameOverlayToWebPage("https://steamcommunity.com/sharedfiles/filedetails/?id="+modId)
+						}
+					}, {
 						type: "button",
 						sprite: "spr_button_windowheader",
 						fillWidth: true,

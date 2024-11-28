@@ -64,3 +64,17 @@ gui_CityGUI.prototype.addGeneralStatistics = function(orig) {
 		}
     }
 } (gui_CityGUI.prototype.addGeneralStatistics)
+
+gui_TextElement.prototype.setTextWithoutSizeUpdate = function(orig) {
+	return function(...args) {
+		const ret = orig.apply(this, args)
+		let bitmapContainer = this.get_textContainer()
+		let text = bitmapContainer.internalText.text
+		if(HxOverrides.substr(text,0,"[i#".length) == "[i#" && HxOverrides.substr(text,9,1) == "]") {
+			this.get_textContainer().set_tint(thx_color_Rgb.toInt(thx_color_Rgbxa.toRgb(thx_color_Color.parse(HxOverrides.substr(text,2,7)))))
+			text = HxOverrides.substr(text,"[i#123456]".length,null);
+		}
+		bitmapContainer.set_text(text)
+		return ret
+	}
+} (gui_TextElement.prototype.setTextWithoutSizeUpdate)

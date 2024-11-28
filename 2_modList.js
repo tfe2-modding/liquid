@@ -77,6 +77,8 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 	for (let i = 0; i < modList.length; i++) {
 		const mod = modList[i]
 		modsByAssignedID[mod.id] = mod
+		mod.mtime = new Date(fs.statSync(mod.path).mtime)
+		mod.utime = new Date(0)
 		// attempt to load the file
 		let file
 		try {
@@ -204,8 +206,13 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 					if (mod.id == null) {
 						mod.id = workshopMod.publishedFileId
 					}
+					mod.utime = new Date(workshopMod.timeUpdated*1000)
+					if (mod.utime.getTime() > mod.mtime.getTime()) {
+						Liquid._anyModNeedsUpdate = true
+						if (Liquid.modMenuButton) Liquid.modMenuButton.texture = Resources.getTexture("spr_logo_liquid_needsupdate")
+					}
 					if (mod.version == null) {
-						mod.version = (new Date(workshopMod.timeUpdated*1000)).toDateString()
+						mod.version = mod.utime.toDateString()
 					}
 					if (mod.name == null) {
 						mod.name = workshopMod.title
