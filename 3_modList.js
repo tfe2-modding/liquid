@@ -14,31 +14,6 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		}
 	}
 
-	// fix my stupid mistake
-	const settingsPath = path.join(nw.App.dataPath, "modSettings")
-	const oldSettingsPath = path.join(global.__dirname, "mod_data")
-	if (fs.existsSync(oldSettingsPath)) {
-		function moveFiles(sourceDir, targetDir) {
-			const files = fs.readdirSync(sourceDir)
-			files.forEach((file) => {
-				const oldPath = path.join(sourceDir, file)
-				const newPath = path.join(targetDir, file)
-				const stat = fs.lstatSync(oldPath)
-	
-				if (stat.isDirectory()) {
-					moveFiles(oldPath, targetDir)
-				} else if (stat.isFile()) {
-					fs.renameSync(oldPath, newPath)
-				}
-			})
-		}
-		try {
-			fs.mkdirSync(settingsPath)
-			moveFiles(oldSettingsPath, settingsPath)
-			fs.rmdirSync(oldSettingsPath)
-		} catch(e) {}
-	}
-
 	// get all local mods
 	const files = fs.readdirSync(_internalModHelpers.path, { withFileTypes: true })
 	var localMods = []
@@ -148,9 +123,11 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 					let mod = modsByAssignedID[assignedID]
 					const respath = res.url.replace(mod.path, "")
 					let loadingExplainer = document.getElementsByClassName("loadingExplainer")[0]
-					loadingExplainer.style.opacity = "100% !important"
-					loadingExplainer.style.animation = "none"
-					loadingExplainer.innerText = `Loading ${mod.name || mod.id}: ${respath}`
+					try {
+						loadingExplainer.style.opacity = "100% !important"
+						loadingExplainer.style.animation = "none"
+						loadingExplainer.innerText = `Loading ${mod.name || mod.id}: ${respath}`
+					} catch(e) {}
 					next()
 				})
 				wrapper.loader.use(function(res, next) {
@@ -188,41 +165,5 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 			orig.call(this, drawRectangle, scaling)
 		}
 	} (GameLoader.prototype.update)
-	// try to resolve unknown properties from the workshop
-	ModTools.onModsLoaded(async function () {
-		let i = 0
-		while (true) {
-			i++
-			let workshopMods = await new Promise(resolve => {
-				getInstalledMods(i, resolve)
-			})
-			if (workshopMods.length == 0) {
-				break
-			}
-			for (let index = 0; index < workshopMods.length; index++) {
-				let workshopMod = workshopMods[index]
-				const mod = modsByAssignedID[workshopMod.publishedFileId]
-				if (mod) {
-					if (mod.id == null) {
-						mod.id = workshopMod.publishedFileId
-					}
-					mod.utime = new Date(workshopMod.timeUpdated*1000)
-					if (mod.utime.getTime() > mod.mtime.getTime()) {
-						Liquid._anyModNeedsUpdate = true
-						if (Liquid.modMenuButton) Liquid.modMenuButton.texture = Resources.getTexture("spr_logo_liquid_needsupdate")
-					}
-					if (mod.version == null) {
-						mod.version = mod.utime.toDateString()
-					}
-					if (mod.name == null) {
-						mod.name = workshopMod.title
-					}
-					if (mod.description == null) {
-						mod.description = workshopMod.description
-					}
-				}
-			}
-		}
-	})
 	return mods
 })

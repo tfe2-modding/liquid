@@ -1,5 +1,3 @@
-// define liquid
-let Liquid = {}
 Liquid.version = 2.191
 // modID getter
 Liquid.getModID = function(backamount=0) {
