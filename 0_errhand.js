@@ -9,7 +9,7 @@ Liquid._onModNamesResolved = function() {}
 	let gamePrefix = String.raw `chrome-extension:\/\/\w+`
 	let yourModsPrefix = encodeURI("file:///"+nw.App.dataPath).replaceAll("%5C","/").replace(/[-[\]{}()*+?.,\\^$|#\s\/]/g, '\\$&')
 	let modsPrefix = encodeURI((_internalModHelpers.getAllModsSteam()[0].split("1180130")[0]+"1180130\\").replace("steamMod", "file")).replaceAll("%5C","/").replace(/[-[\]{}()*+?.,\\^$|#\s\/]/g, '\\$&')
-	let noErrors = true
+	let errors = false
 	let doctext = ""
 	function fixFileNames(msg) {
 		return msg
@@ -24,8 +24,12 @@ Liquid._onModNamesResolved = function() {}
 			})
 	}
 	window.onerror = function(message, filename, lineno, colno, error) {
-		if (noErrors) {
-			noErrors = false
+		if (!errors) {
+			errors = []
+			Liquid._copyAllErrors = function() {
+				nw.Clipboard.get().set(fixFileNames(errors.join("\n\n")), "text")
+				document.getElementById("copymsg").innerText = "Errors copied!"
+			}
 			doctext += `
 	<style>
 		:root {
@@ -49,9 +53,17 @@ Liquid._onModNamesResolved = function() {}
 		i {
 			color: #aaa;
 		}
+		.cantclickme {
+			pointer-events: none;
+		}
+		summary {
+			cursor: pointer;
+			user-select: none;
+		}
 	</style>
 	<h1>Oops, something went wrong!</h1>
-	<p>The following errors were recorded. Please report these to the mod developers.</p>
+	<p>The following errors were recorded. Please report these to the mod developers. The best way to do this is to copy the error(s) and open a discussion on the workshop page of the mod that caused the errors.</p>
+	<button onclick="Liquid._copyAllErrors()">Copy all errors</button> <span id="copymsg"></span>
 `
 		}
 		let errtype
@@ -63,7 +75,7 @@ Liquid._onModNamesResolved = function() {}
 		if (filename.match(new RegExp("^"+yourModsPrefix))) {
 			errtype = ERR_DEV
 			let mod = fixFileNames(filename).match(/mods\/[^\/]+/) + ""
-			whosAtFault = `Your mod: <a href="javascript:void(0)" onclick="nw.Shell.openExternal('${filename.split(mod)[0]+mod}')">`+mod.replace("mods/")+"</a>"
+			whosAtFault = `Your mod: <a href="javascript:void(0)" onclick="nw.Shell.openExternal('${decodeURIComponent(filename).split(mod)[0]+mod}')">`+mod.replace("mods/", "")+"</a>"
 		}
 		if (filename.match(new RegExp("^"+modsPrefix))) {
 			errtype = ERR_MOD
@@ -84,6 +96,8 @@ Liquid._onModNamesResolved = function() {}
 	<pre>Source: ${filename}:${lineno}:${colno}
 ${error.stack}</pre>
 `
+		errors.push(`Source: ${filename}:${lineno}:${colno}
+${error.stack}`)
 		document.firstElementChild.innerHTML = fixFileNames(doctext)
 		Liquid._onModNamesResolved = function() {
 			document.firstElementChild.innerHTML = fixFileNames(doctext)
