@@ -101,6 +101,10 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 		mod.currentSettings = readJSON(mod.id+".json", {})
 		mods[mod.id] = mod
 	}
+	// fixy fixy
+	function normalizeURL(url) {
+		return decodeURIComponent(url).replace(/^c/,"C").replaceAll("/","\\")
+	}
 	// hook the mod loader
 	let L = { progress: 0 }
 	modding_ModLoader.loadAllModsPhase2 = function(orig) {
@@ -119,7 +123,9 @@ Liquid._superInternalFunctionThatOnlyExistsBecauseICantUseModulesInModsSeriously
 				const progressScale = 1 / loaders.length
 				wrapper.loader.pre(function(res, next) {
 					L.progress = (wrapper.loader.progress * progressScale + baseProgress) * 100
+					res.url = normalizeURL(res.url)
 					const assignedID = res.url.replace(modsPath, "").replace(steamModsPath, "").split(/\/|\\/)[0]
+					console.log(res.url, assignedID)
 					let mod = modsByAssignedID[assignedID]
 					const respath = res.url.replace(mod.path, "")
 					let loadingExplainer = document.getElementsByClassName("loadingExplainer")[0]

@@ -1,4 +1,4 @@
-Liquid.version = 2.192
+Liquid.version = 2.193
 // modID getter
 Liquid.getModID = function(backamount=0) {
     const err = new Error()
